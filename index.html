@@ -330,6 +330,16 @@ button,input{font:inherit} button{cursor:pointer}
 
 
 .analytics-page{padding-top:30px}
+.profile-page{padding-top:30px}
+.history-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+.history-btn{border:1px solid #e6e8eb;background:#fff;border-radius:14px;padding:14px 12px;text-align:left;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+.history-btn strong{display:block;font-size:12px;margin-bottom:4px}.history-btn span{font-size:10px;color:#85888d}
+.history-sheet-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);z-index:999;display:none;align-items:flex-end;justify-content:center}
+.history-sheet-backdrop.show{display:flex}
+.history-sheet{width:min(560px,100%);max-height:82vh;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));overflow:auto;box-shadow:0 -12px 35px rgba(0,0,0,.18)}
+.history-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.history-sheet-head h2{margin:0;font-size:16px}.history-close{width:34px;height:34px;border:0;border-radius:50%;background:#f1f3f5;cursor:pointer}
+.history-card{border:1px solid #e8eaed;border-radius:14px;padding:13px;margin-bottom:10px}.cancel-history-btn strong{color:#c74747}.cancel-history-btn{border-color:#f0dede}.history-card-top{display:flex;justify-content:space-between;gap:10px}.history-card-title{font-size:12px;font-weight:800}.history-card-time{font-size:10px;color:#7b8086;margin-top:4px}.history-card-meta{font-size:10px;color:#666;margin-top:8px;line-height:1.5}.history-pill{font-size:9px;font-weight:800;border-radius:999px;padding:5px 8px;background:#eef7f0;color:#198754;height:max-content}.history-pill.cancel{background:#fff0f0;color:#c74747}.history-empty{text-align:center;padding:35px 10px;color:#85888d;font-size:12px}
+
 .analytics-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .analytics-card{padding:15px;background:#fff;border:1px solid #e7e8ea;border-radius:14px}
 .analytics-card-label{color:#8b8e94;font-size:9px;font-weight:700}
@@ -431,7 +441,7 @@ button,input{font:inherit} button{cursor:pointer}
     <div id="productsDisplay" class="products-list"></div>
 </section>
 
-<section id="profilePage" class="app-page">
+<section id="profilePage" class="app-page profile-page">
 
 <div class="page-title">
     <h1>Profile</h1>
@@ -471,6 +481,19 @@ button,input{font:inherit} button{cursor:pointer}
         <input id="storeStatusSwitch" type="checkbox">
         <span class="slider"></span>
     </label>
+</div>
+
+<div class="history-actions">
+    <button id="packedHistoryBtn" class="history-btn" type="button">
+        <strong><i class="fa-solid fa-box-check"></i> Packed Items</strong>
+        <span>See orders packed by this vendor</span>
+    </button>
+
+    <button id="cancelledHistoryBtn" class="history-btn cancel-history-btn" type="button">
+        <strong>Cancelled Orders</strong>
+        <span>See orders that were packed and then cancelled</span>
+    </button>
+
 </div>
 
 <button id="logoutBtn" class="logout" type="button">Logout</button>
@@ -526,6 +549,18 @@ button,input{font:inherit} button{cursor:pointer}
 
 </div>
 
+<div id="historySheetBackdrop" class="history-sheet-backdrop">
+    <div id="historySheet" class="history-sheet" role="dialog" aria-modal="true">
+        <div class="history-sheet-head">
+            <h2 id="historySheetTitle">History</h2>
+            <button id="historyCloseBtn" class="history-close" type="button" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="historySheetBody"></div>
+    </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -576,6 +611,8 @@ let vendorProducts = [];
 let vendorOrders = [];
 let channels = [];
 let productChannels = [];
+let analyticsOrders = [];
+let analyticsRefreshPromise = null;
 
 
 
@@ -622,49 +659,155 @@ function getAnalyticsOrderStatus(order){
     return String(order.order_status ?? order.status ?? "placed")
         .trim().toLowerCase().replaceAll(" ","_");
 }
+async function loadAnalyticsOrders(){
+    if(!currentVendor || !currentVendor.id){
+        analyticsOrders = [];
+        renderAnalytics();
+        return;
+    }
+
+    if(analyticsRefreshPromise){
+        return analyticsRefreshPromise;
+    }
+
+    analyticsRefreshPromise = (async()=>{
+        try{
+            const startTime = getOrderTrackingStart();
+            const startISO = startTime !== null
+                ? new Date(startTime).toISOString()
+                : null;
+
+            const vendorProductMap = createVendorProductMap();
+            const all = [];
+
+            for(const config of ORDER_TABLES){
+                let query = sb
+                    .from(config.table)
+                    .select("*")
+                    .order("created_at", {ascending:true})
+                    .limit(1000);
+
+                if(startISO){
+                    query = query.gte("created_at", startISO);
+                }
+
+                const {data, error} = await query;
+
+                if(error){
+                    console.error("Analytics source load error:", config.table, error);
+                    continue;
+                }
+
+                (data || []).forEach(row=>{
+                    const directVendor =
+                        row.vendor_id !== null &&
+                        row.vendor_id !== undefined &&
+                        String(row.vendor_id) === String(currentVendor.id);
+
+                    let productBelongsToVendor = false;
+                    if(!directVendor){
+                        const items = getOrderItems(row);
+                        productBelongsToVendor = items.some(item=>{
+                            const table = getProductTable(item);
+                            const id = getProductId(item);
+                            if(!table || id === null) return false;
+                            return vendorProductMap.has(productKey(table,id));
+                        });
+                    }
+
+                    if(directVendor || productBelongsToVendor){
+                        all.push({
+                            ...row,
+                            _sourceTable: config.table,
+                            _orderType: config.type,
+                            _payment: config.payment,
+                            _deliveryTable: config.deliveryTable,
+                            _analyticsVendorMatch: directVendor
+                                ? "vendor_id"
+                                : "vendor_product"
+                        });
+                    }
+                });
+            }
+
+            const unique = new Map();
+            all.forEach(order=>{
+                const key = `${order._sourceTable}:${String(order.id)}`;
+                unique.set(key, order);
+            });
+
+            analyticsOrders = Array.from(unique.values());
+            renderAnalytics();
+        }finally{
+            analyticsRefreshPromise = null;
+        }
+    })();
+
+    return analyticsRefreshPromise;
+}
+
 function renderAnalytics(){
-    const orders=Array.isArray(vendorOrders)?vendorOrders:[];
-    let packed=0,cancelled=0,waiting=0,onWay=0,delivered=0;
-    let grossProducts=0,cancelledProducts=0;
+    const orders = Array.isArray(analyticsOrders)
+        ? analyticsOrders
+        : [];
+
+    let packed=0;
+    let cancelled=0;
+    let waiting=0;
+    let onWay=0;
+    let delivered=0;
+    let grossProducts=0;
+    let cancelledProducts=0;
 
     orders.forEach(order=>{
-        const status=getAnalyticsOrderStatus(order);
-        const amount=getVendorOrderProductAmount(order);
+        const status = getAnalyticsOrderStatus(order);
+        const amount = getVendorOrderProductAmount(order);
 
-        if(status==="cancelled"||status==="canceled"){
+        // Gross includes every vendor order, including cancelled orders.
+        // The cancelled amount is deducted below to produce net sales.
+        grossProducts += amount;
+
+        if(status === "cancelled" || status === "canceled"){
             cancelled++;
-            cancelledProducts+=amount;
+            cancelledProducts += amount;
             return;
         }
 
-        grossProducts+=amount;
-
-        if(status==="packed") packed++;
-        else if(status==="on_the_way"||status==="ontheway") onWay++;
-        else if(status==="delivered") delivered++;
-        else waiting++;
+        if(status === "packed"){
+            packed++;
+        }else if(status === "on_the_way" || status === "ontheway"){
+            onWay++;
+        }else if(status === "delivered"){
+            delivered++;
+        }else{
+            waiting++;
+        }
     });
 
-    const totalOrders=Math.max(0,orders.length-cancelled);
-    const netProducts=Math.max(0,grossProducts-cancelledProducts);
-    const money=v=>"₹"+Number(v||0).toLocaleString("en-IN",{minimumFractionDigits:0,maximumFractionDigits:2});
-    const set=(id,v)=>{
-        const el=document.getElementById(id);
-        if(el) el.textContent=v;
+    const totalOrders = Math.max(0, orders.length - cancelled);
+    const netProducts = Math.max(0, grossProducts - cancelledProducts);
+    const money = v => "₹" + Number(v || 0).toLocaleString("en-IN",{
+        minimumFractionDigits:0,
+        maximumFractionDigits:2
+    });
+
+    const set = (id,v) => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = v;
     };
 
-    set("analyticsTotalOrders",totalOrders);
-    set("analyticsPacked",packed);
-    set("analyticsCancelled",cancelled);
-    set("analyticsProductSales",money(netProducts));
-    set("analyticsWaiting",waiting);
-    set("analyticsPackedRow",packed);
-    set("analyticsOnWay",onWay);
-    set("analyticsDelivered",delivered);
-    set("analyticsCancelledRow",cancelled);
-    set("analyticsGrossProducts",money(grossProducts));
-    set("analyticsCancelledProducts","−"+money(cancelledProducts));
-    set("analyticsNetProducts",money(netProducts));
+    set("analyticsTotalOrders", totalOrders);
+    set("analyticsPacked", packed);
+    set("analyticsCancelled", cancelled);
+    set("analyticsProductSales", money(netProducts));
+    set("analyticsWaiting", waiting);
+    set("analyticsPackedRow", packed);
+    set("analyticsOnWay", onWay);
+    set("analyticsDelivered", delivered);
+    set("analyticsCancelledRow", cancelled);
+    set("analyticsGrossProducts", money(grossProducts));
+    set("analyticsCancelledProducts", "−" + money(cancelledProducts));
+    set("analyticsNetProducts", money(netProducts));
 }
 
 /*
@@ -693,10 +836,6 @@ source order_status becomes "packed"
 and it disappears.
 */
 
-let startMarkers = {
-    cash_delivery_orders:0,
-    upi_orders:0
-};
 
 
 const bootScreen =
@@ -1525,13 +1664,37 @@ async function saveVendorFcmToken(){
         }
 
 
+        /*
+          Save the real Android FCM token directly into the
+          currently logged-in vendor_login row.
+        */
         const {
-            error
+            error:vendorError
         } =
         await sb
-        .from(
-            "delivery_partner_device_tokens"
-        )
+        .from("vendor_login")
+        .update({
+            fcm_token:cezooFcmToken,
+            fcm_token_updated_at:new Date().toISOString()
+        })
+        .eq("id",currentVendor.id);
+
+        if(vendorError){
+            console.error(
+                "Vendor FCM token save error:",
+                vendorError
+            );
+        }
+
+        /*
+          Keep the existing token table too so the current
+          notification system continues to work.
+        */
+        const {
+            error:deviceError
+        } =
+        await sb
+        .from("delivery_partner_device_tokens")
         .upsert(
             {
                 mobile:mobileValue,
@@ -1543,23 +1706,23 @@ async function saveVendorFcmToken(){
             }
         );
 
-
-        if(error){
-
-            console.error(
-                "FCM token save error:",
-                error
+        if(deviceError){
+            console.warn(
+                "Device token table update warning:",
+                deviceError
             );
-
-            return;
-
         }
 
+        if(!vendorError){
+            currentVendor.fcm_token = cezooFcmToken;
+            currentVendor.fcm_token_updated_at =
+                new Date().toISOString();
 
-        console.log(
-            "CEZOO FCM token saved for vendor:",
-            mobileValue
-        );
+            console.log(
+                "CEZOO FCM token saved in vendor_login:",
+                currentVendor.id
+            );
+        }
 
 
     }catch(error){
@@ -1884,6 +2047,8 @@ async function openVendorApp(
 
     await loadVendorProducts();
 
+    await loadAnalyticsOrders();
+
     stopProductRealtime();
     await startProductRealtime();
 
@@ -1894,49 +2059,18 @@ async function openVendorApp(
 
 
     /*
-    FIRST TIME ONLY:
-    current last rows become start point.
-
-    REFRESH:
-    same saved start point is reused.
+       FROM-NOW TRACKING
+       The start time is stored in the vendor_login row in Supabase.
+       No order marker is stored in localStorage.
     */
-
-    const hasSavedMarkers =
-        loadSavedStartMarkers();
-
-
-    if(
-        !hasSavedMarkers
-    ){
-
-        await createStartMarkers();
-
-
-        saveStartMarkers();
-
-    }
-
-
-    /*
-    Reload every pending order from
-    original start point up to now.
-
-    This is what makes an UNPACKED order
-    survive refresh.
-    */
+    await ensureOrderTrackingStart();
 
     await loadPendingOrdersFromStart();
-
 
     await startRealtime();
 
-
-    /*
-    Catch orders inserted during realtime setup.
-    */
-
+    /* Catch anything inserted during realtime setup. */
     await loadPendingOrdersFromStart();
-
 
     renderOrders();
 
@@ -1949,144 +2083,55 @@ async function openVendorApp(
 
 
 /* ===========================
-   START MARKER PERSISTENCE
-=========================== */
+   FROM-NOW ORDER TRACKING
+   =========================== */
 
-function markerKey(){
-
-    return (
-        "cezoo_vendor_order_start_"
-        +
-        String(
-            currentVendor.id
-        )
-    );
-
-}
-
-
-function saveStartMarkers(){
-
-    localStorage.setItem(
-
-        markerKey(),
-
-        JSON.stringify(
-            startMarkers
-        )
-
-    );
-
-}
-
-
-function loadSavedStartMarkers(){
-
-    const raw =
-        localStorage.getItem(
-            markerKey()
-        );
-
-
-    if(
-        !raw
-    ){
-        return false;
+async function ensureOrderTrackingStart(){
+    if(!currentVendor || !currentVendor.id){
+        return;
     }
 
-
-    try{
-
-
-        const parsed =
-            JSON.parse(raw);
-
-
-        startMarkers = {
-
-            cash_delivery_orders:
-                Number(
-                    parsed.cash_delivery_orders
-                ) || 0,
-
-            upi_orders:
-                Number(
-                    parsed.upi_orders
-                ) || 0
-
-        };
-
-
-        return true;
-
-
-    }catch(error){
-
-
-        return false;
-
-
+    // Use the value already stored in Supabase.
+    if(currentVendor.order_tracking_started_at){
+        return;
     }
 
-}
+    const startedAt = new Date().toISOString();
 
+    const { data, error } = await sb
+        .from("vendor_login")
+        .update({ order_tracking_started_at: startedAt })
+        .eq("id", currentVendor.id)
+        .is("order_tracking_started_at", null)
+        .select("*")
+        .maybeSingle();
 
-async function createStartMarkers(){
-
-    startMarkers = {
-        cash_delivery_orders:0,
-        upi_orders:0
-    };
-
-
-    for(
-        const config
-        of ORDER_TABLES
-    ){
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(
-            config.table
-        )
-        .select("id")
-        .order(
-            "id",
-            {
-                ascending:false
-            }
-        )
-        .limit(1);
-
-
-        if(error){
-
-            console.error(
-                "Start marker error:",
-                config.table,
-                error
-            );
-
-            continue;
-
-        }
-
-
-        startMarkers[
-            config.table
-        ] =
-            data?.length
-            ? Number(data[0].id) || 0
-            : 0;
-
+    if(error){
+        console.error("Could not save order tracking start time:", error);
+        throw error;
     }
 
+    if(data){
+        currentVendor = data;
+    }else{
+        // Another device may have saved it first. Read the vendor row.
+        const { data: vendorRow, error: readError } = await sb
+            .from("vendor_login")
+            .select("*")
+            .eq("id", currentVendor.id)
+            .maybeSingle();
+
+        if(readError) throw readError;
+        if(vendorRow) currentVendor = vendorRow;
+    }
 }
 
+function getOrderTrackingStart(){
+    const value = currentVendor?.order_tracking_started_at;
+    if(!value) return null;
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : null;
+}
 
 /* ===========================
    PROFILE
@@ -2622,117 +2667,41 @@ function sortVendorOrders(){
 =========================== */
 
 async function loadPendingOrdersFromStart(){
-
-    if(
-        !currentVendor
-    ){
+    if(!currentVendor){
         return;
     }
 
+    const startTime = getOrderTrackingStart();
+    if(startTime === null){
+        console.error("Order tracking start time is missing");
+        return;
+    }
 
     const loaded = [];
 
-
-    for(
-        const config
-        of ORDER_TABLES
-    ){
-
-
-        const marker =
-            Number(
-                startMarkers[
-                    config.table
-                ] || 0
-            );
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(
-            config.table
-        )
-        .select("*")
-        .gt(
-            "id",
-            marker
-        )
-        .order(
-            "id",
-            {
-                ascending:true
-            }
-        )
-        .limit(500);
-
+    for(const config of ORDER_TABLES){
+        const { data, error } = await sb
+            .from(config.table)
+            .select("*")
+            .gt("created_at", new Date(startTime).toISOString())
+            .order("created_at", { ascending:true })
+            .limit(500);
 
         if(error){
-
-            console.error(
-                "Pending load error:",
-                config.table,
-                error
-            );
-
+            console.error("Pending load error:", config.table, error);
             continue;
-
         }
 
-
-        (
-            data || []
-        )
-        .forEach(
-            row => {
-
-
-                const prepared =
-                    prepareVendorOrder(
-                        row,
-                        config
-                    );
-
-
-                if(
-                    prepared
-                ){
-
-                    loaded.push(
-                        prepared
-                    );
-
-                }
-
-
-            }
-        );
-
-
+        (data || []).forEach(row => {
+            const prepared = prepareVendorOrder(row, config);
+            if(prepared) loaded.push(prepared);
+        });
     }
 
-
-    /*
-    Replace in-memory queue with DB truth.
-
-    So refresh/reopen always restores every
-    order since start point that is still
-    NOT packed.
-    */
-
-    vendorOrders =
-        loaded;
-
-
+    vendorOrders = loaded;
     sortVendorOrders();
-
-
     renderOrders();
-
 }
-
 
 /* ===========================
    PRODUCTS REALTIME
@@ -2993,17 +2962,10 @@ async function startRealtime(){
                             payload.new;
 
 
-                        const marker =
-                            Number(
-                                startMarkers[
-                                    config.table
-                                ] || 0
-                            );
+                        const startTime = getOrderTrackingStart();
+                        const rowTime = new Date(row.created_at || 0).getTime();
 
-
-                        if(
-                            Number(row.id || 0) <= marker
-                        ){
+                        if(startTime === null || !Number.isFinite(rowTime) || rowTime <= startTime){
                             return;
                         }
 
@@ -3048,17 +3010,10 @@ async function startRealtime(){
                             payload.new;
 
 
-                        const marker =
-                            Number(
-                                startMarkers[
-                                    config.table
-                                ] || 0
-                            );
+                        const startTime = getOrderTrackingStart();
+                        const rowTime = new Date(row.created_at || 0).getTime();
 
-
-                        if(
-                            Number(row.id || 0) <= marker
-                        ){
+                        if(startTime === null || !Number.isFinite(rowTime) || rowTime <= startTime){
                             return;
                         }
 
@@ -3788,10 +3743,11 @@ async function(
             sourceTable
         )
         .update({
-
-            order_status:
-                "packed"
-
+            order_status:"packed",
+            vendor_id:String(currentVendor.id),
+            vendor_name:currentVendor.vendor_name || "",
+            vendor_packed_at:new Date().toISOString(),
+            vendor_packed_id:`${currentVendor.id}-${id}`
         })
         .eq(
             "id",
@@ -4852,6 +4808,727 @@ document
 /* ===========================
    RESTORE LOGIN
 =========================== */
+
+
+/* ===========================
+   VENDOR HISTORY SHEETS
+=========================== */
+
+function formatHistoryDate(value){
+    if(!value) return "Time not available";
+    const d = new Date(value);
+    if(Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString("en-IN",{
+        day:"2-digit", month:"short", year:"numeric",
+        hour:"2-digit", minute:"2-digit", hour12:true
+    });
+}
+
+function historyOrderLabel(row){
+    return row.order_id ?? row.order_number ?? row.order_no ?? row.source_order_id ?? row.id ?? "—";
+}
+
+function historyCustomer(row){
+    return row.customer_name ?? row.user_name ?? row.name ?? row.customer ?? "Customer";
+}
+
+function openHistorySheet(title, bodyHtml){
+    historySheetTitle.textContent = title;
+    historySheetBody.innerHTML = bodyHtml;
+    historySheetBackdrop.classList.add("show");
+    document.body.style.overflow = "hidden";
+}
+
+function closeHistorySheet(){
+    historySheetBackdrop.classList.remove("show");
+    document.body.style.overflow = "";
+}
+
+async function loadPackedHistory(){
+    if(!currentVendor?.id){
+        openHistorySheet("Packed Items", `<div class="history-empty">Please login first.</div>`);
+        return;
+    }
+
+    historySheetBody.innerHTML = `
+        <div class="history-empty">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <br><br>Loading packed items...
+        </div>`;
+    openHistorySheet("Packed Items", historySheetBody.innerHTML);
+
+    const all=[];
+    const trackingStart = getOrderTrackingStart();
+
+    /*
+       Packed history comes from the delivery tables.
+
+       IMPORTANT:
+       If the customer later cancels an order that was already packed,
+       that order must move to "Cancelled Orders" and must no longer
+       remain inside "Packed Items".
+    */
+
+    const cancelledKeys = new Set();
+
+    // Read cancelled source orders for this vendor first.
+    for(const config of ORDER_TABLES){
+        const {data,error}=await sb
+            .from(config.table)
+            .select("*")
+            .eq("vendor_id",currentVendor.id)
+            .limit(1000);
+
+        if(error){
+            console.warn("Cancelled source lookup:",config.table,error);
+            continue;
+        }
+
+        (data||[]).forEach(row=>{
+            const status=String(
+                row.order_status ??
+                row.status ??
+                ""
+            ).trim().toLowerCase();
+
+            if(status!=="cancelled" && status!=="canceled"){
+                return;
+            }
+
+            const packedTime =
+                row.vendor_packed_at ||
+                row.packed_at ||
+                null;
+
+            if(!packedTime){
+                return;
+            }
+
+            if(
+                trackingStart !== null &&
+                new Date(packedTime).getTime() < trackingStart
+            ){
+                return;
+            }
+
+            cancelledKeys.add(
+                `${config.type}:${String(row.id)}`
+            );
+
+            cancelledKeys.add(
+                String(
+                    row.order_id ??
+                    row.order_number ??
+                    row.order_no ??
+                    row.id
+                )
+            );
+        });
+    }
+
+    for(const table of ["delivery_cash_orders","delivery_upi_orders"]){
+
+        let query = sb
+            .from(table)
+            .select("*")
+            .eq("vendor_id",currentVendor.id)
+            .order("vendor_packed_at",{ascending:false})
+            .limit(500);
+
+        if(trackingStart !== null){
+            query=query.gte(
+                "vendor_packed_at",
+                new Date(trackingStart).toISOString()
+            );
+        }
+
+        const {data,error}=await query;
+
+        if(error){
+            console.error("Packed history error:",table,error);
+            continue;
+        }
+
+        (data||[]).forEach(row=>{
+
+            const packedTime =
+                row.vendor_packed_at ||
+                row.packed_at ||
+                row.updated_at ||
+                row.created_at;
+
+            if(
+                trackingStart !== null &&
+                (
+                    !packedTime ||
+                    new Date(packedTime).getTime() < trackingStart
+                )
+            ){
+                return;
+            }
+
+            const status=String(
+                row.order_status ??
+                row.status ??
+                row.delivery_status ??
+                ""
+            ).trim().toLowerCase();
+
+            if(status==="cancelled" || status==="canceled"){
+                return;
+            }
+
+            const sourceId=String(
+                row.source_order_id ??
+                row.order_id ??
+                row.order_number ??
+                row.id
+            );
+
+            // If the original packed customer order was cancelled,
+            // do not show it in Packed Items.
+            if(cancelledKeys.has(sourceId)){
+                return;
+            }
+
+            all.push({
+                ...row,
+                _historyTable:table
+            });
+        });
+    }
+
+    all.sort((a,b)=>
+        new Date(
+            b.vendor_packed_at ||
+            b.packed_at ||
+            b.updated_at ||
+            b.created_at ||
+            0
+        ) -
+        new Date(
+            a.vendor_packed_at ||
+            a.packed_at ||
+            a.updated_at ||
+            a.created_at ||
+            0
+        )
+    );
+
+    if(!all.length){
+        historySheetBody.innerHTML=`
+            <div class="history-empty">
+                <i class="fa-solid fa-box-open"></i>
+                <br><br>
+                No packed items yet.
+                <br>
+                Items will appear here when you pack an order.
+            </div>`;
+        return;
+    }
+
+    historySheetBody.innerHTML=all.map(row=>{
+        const packedNo =
+            row.vendor_packed_id
+                ? `Packed #${escapeHTML(row.vendor_packed_id)}`
+                : "PACKED";
+
+        const source =
+            row.source_order_id ??
+            row.order_id ??
+            "—";
+
+        const items =
+            Array.isArray(row.items)
+                ? row.items
+                : parseItems(row.items);
+
+        const totalQty =
+            items.reduce(
+                (sum,item)=>sum+getQuantity(item),
+                0
+            );
+
+        return `
+        <div class="history-card">
+            <div class="history-card-top">
+                <div>
+                    <div class="history-card-title">
+                        Order #${escapeHTML(source)}
+                    </div>
+                    <div class="history-card-time">
+                        Packed on ${escapeHTML(
+                            formatHistoryDate(
+                                row.vendor_packed_at ||
+                                row.packed_at ||
+                                row.updated_at ||
+                                row.created_at
+                            )
+                        )}
+                    </div>
+                </div>
+                <div class="history-pill">${packedNo}</div>
+            </div>
+
+            <div class="history-card-meta">
+                <strong>Packed by:</strong>
+                ${escapeHTML(
+                    row.vendor_name ||
+                    currentVendor.vendor_name ||
+                    "Vendor"
+                )}<br>
+
+                <strong>Customer:</strong>
+                ${escapeHTML(historyCustomer(row))}<br>
+
+                <strong>Items:</strong>
+                ${totalQty || items.length || 0}<br>
+
+                <strong>Payment:</strong>
+                ${escapeHTML(
+                    row.source_order_type ||
+                    row.payment_method ||
+                    row.payment ||
+                    "—"
+                )}
+            </div>
+        </div>`;
+    }).join("");
+}
+
+async function loadCancelledHistory(){
+    if(!currentVendor?.id){
+        openHistorySheet(
+            "Cancelled Orders",
+            `<div class="history-empty">Please login first.</div>`
+        );
+        return;
+    }
+
+    openHistorySheet(
+        "Cancelled Orders",
+        `<div class="history-empty">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <br><br>Loading cancelled orders...
+        </div>`
+    );
+
+    /*
+      IMPORTANT:
+      Do NOT require vendor_id on the original order table.
+
+      The customer order can be cancelled after the vendor packed it.
+      In that case the original cash_delivery_orders / upi_orders row
+      may have NO vendor_id column/value.
+
+      The delivery_* table is the vendor's packed copy, so we use it
+      to prove that THIS vendor packed the order.
+    */
+
+    const trackingStart = getOrderTrackingStart();
+    const all = [];
+    const deliveryBySource = new Map();
+
+    // ---------------------------------------------------------
+    // 1. LOAD ALL ORDERS PACKED BY THIS VENDOR
+    // ---------------------------------------------------------
+    for(const table of ["delivery_cash_orders","delivery_upi_orders"]){
+
+        const {data,error} = await sb
+            .from(table)
+            .select("*")
+            .eq("vendor_id", currentVendor.id)
+            .limit(2000);
+
+        if(error){
+            console.error(
+                "Cancelled history delivery load error:",
+                table,
+                error
+            );
+            continue;
+        }
+
+        (data || []).forEach(row => {
+
+            const sourceId = String(
+                row.source_order_id ??
+                row.order_id ??
+                row.order_number ??
+                ""
+            ).trim();
+
+            if(!sourceId) return;
+
+            const packedAt =
+                row.vendor_packed_at ??
+                row.packed_at ??
+                null;
+
+            // Only packed records can become "vendor packed then cancelled".
+            if(!packedAt) return;
+
+            const packedTime = new Date(packedAt).getTime();
+
+            if(!Number.isFinite(packedTime)) return;
+
+            // Respect the vendor's current from-now tracking start.
+            if(
+                trackingStart !== null &&
+                packedTime < trackingStart
+            ){
+                return;
+            }
+
+            const deliveryRecord = {
+                ...row,
+                _deliveryTable: table,
+                _sourceId: sourceId,
+                _payment:
+                    row.source_order_type ||
+                    row.payment_method ||
+                    row.payment ||
+                    (table === "delivery_cash_orders" ? "CASH" : "UPI")
+            };
+
+            deliveryBySource.set(sourceId, deliveryRecord);
+        });
+    }
+
+    /*
+      If there are no vendor packed copies, there cannot be a
+      "packed by this vendor and then cancelled" history.
+    */
+    if(!deliveryBySource.size){
+        historySheetBody.innerHTML = `
+            <div class="history-empty">
+                <i class="fa-solid fa-ban"></i>
+                <br><br>
+                No cancelled packed orders.
+                <br>
+                Orders cancelled before vendor packing are not shown here.
+            </div>`;
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // 2. LOAD CANCELLED SOURCE ORDERS
+    // ---------------------------------------------------------
+    for(const config of ORDER_TABLES){
+
+        /*
+          IMPORTANT FIX:
+          We intentionally DO NOT use:
+              .eq("vendor_id", currentVendor.id)
+
+          because the source order table may not contain vendor_id.
+        */
+        const {data,error} = await sb
+            .from(config.table)
+            .select("*")
+            .in("order_status", ["cancelled","canceled"])
+            .order("created_at", {ascending:false})
+            .limit(2000);
+
+        if(error){
+            console.error(
+                "Cancelled source history load error:",
+                config.table,
+                error
+            );
+            continue;
+        }
+
+        (data || []).forEach(row => {
+
+            const status = String(
+                row.order_status ??
+                row.status ??
+                ""
+            ).trim().toLowerCase();
+
+            if(
+                status !== "cancelled" &&
+                status !== "canceled"
+            ){
+                return;
+            }
+
+            const sourceId = String(
+                row.order_id ??
+                row.id ??
+                row.order_number ??
+                ""
+            ).trim();
+
+            if(!sourceId) return;
+
+            /*
+              THIS is the important matching step.
+
+              A cancelled order is shown only when:
+              1. It is actually cancelled.
+              2. This vendor has a packed delivery copy.
+              3. The packed time is within the vendor's tracking period.
+            */
+            const delivery = deliveryBySource.get(sourceId);
+
+            if(!delivery) return;
+
+            const packedAt =
+                row.vendor_packed_at ??
+                row.packed_at ??
+                delivery.vendor_packed_at ??
+                delivery.packed_at ??
+                null;
+
+            if(!packedAt) return;
+
+            const packedTime = new Date(packedAt).getTime();
+
+            if(!Number.isFinite(packedTime)) return;
+
+            if(
+                trackingStart !== null &&
+                packedTime < trackingStart
+            ){
+                return;
+            }
+
+            all.push({
+                ...row,
+                _historyTable: config.table,
+                _payment: config.payment,
+                _orderType: config.type,
+                _deliveryMatch: delivery,
+                _cancelledAt:
+                    row.cancelled_at ??
+                    row.canceled_at ??
+                    row.updated_at ??
+                    new Date().toISOString()
+            });
+        });
+    }
+
+    // ---------------------------------------------------------
+    // 3. REMOVE DUPLICATES
+    // ---------------------------------------------------------
+    const unique = new Map();
+
+    all.forEach(row => {
+
+        const delivery = row._deliveryMatch || {};
+
+        const source = String(
+            row.order_id ??
+            row.source_order_id ??
+            row.order_number ??
+            row.id ??
+            delivery.source_order_id ??
+            delivery.order_id ??
+            ""
+        ).trim();
+
+        if(!source) return;
+
+        // One cancelled order should appear only once.
+        const key = source;
+
+        if(!unique.has(key)){
+            unique.set(key,row);
+        }
+    });
+
+    const cancelled = Array.from(unique.values()).sort(
+        (a,b) =>
+            new Date(
+                b._cancelledAt ??
+                b.updated_at ??
+                b.created_at ??
+                0
+            ) -
+            new Date(
+                a._cancelledAt ??
+                a.updated_at ??
+                a.created_at ??
+                0
+            )
+    );
+
+    // ---------------------------------------------------------
+    // 4. EMPTY STATE
+    // ---------------------------------------------------------
+    if(!cancelled.length){
+        historySheetBody.innerHTML = `
+            <div class="history-empty">
+                <i class="fa-solid fa-ban"></i>
+                <br><br>
+                No cancelled packed orders.
+                <br>
+                If a vendor-packed order is cancelled,
+                it will appear here automatically.
+            </div>`;
+        return;
+    }
+
+    // ---------------------------------------------------------
+    // 5. RENDER CANCELLED ORDERS
+    // ---------------------------------------------------------
+    historySheetBody.innerHTML = cancelled.map(row => {
+
+        const delivery = row._deliveryMatch || {};
+
+        const source = String(
+            row.order_id ??
+            row.source_order_id ??
+            row.order_number ??
+            row.id ??
+            delivery.source_order_id ??
+            delivery.order_id ??
+            "—"
+        );
+
+        const sourceItems = getOrderItems(row);
+
+        const deliveryItems = delivery.items
+            ? parseItems(delivery.items)
+            : [];
+
+        const items =
+            sourceItems.length
+                ? sourceItems
+                : deliveryItems;
+
+        const qty = items.reduce(
+            (sum,item) =>
+                sum + getQuantity(item),
+            0
+        );
+
+        // Product amount from original cancelled order.
+        let amount = getVendorOrderProductAmount(row);
+
+        // If the original row no longer contains usable item
+        // prices, calculate from the vendor's delivery copy.
+        if(!amount && deliveryItems.length){
+
+            amount = deliveryItems.reduce(
+                (sum,item) => {
+
+                    const product =
+                        vendorProducts.find(
+                            p =>
+                                normalizeTable(
+                                    p.product_table
+                                ) ===
+                                normalizeTable(
+                                    getProductTable(item)
+                                ) &&
+                                String(p.id) ===
+                                String(getProductId(item))
+                        );
+
+                    return sum +
+                        getPrice(item,product) *
+                        getQuantity(item);
+                },
+                0
+            );
+        }
+
+        const packedAt =
+            row.vendor_packed_at ??
+            row.packed_at ??
+            delivery.vendor_packed_at ??
+            delivery.packed_at ??
+            null;
+
+        const cancelledAt =
+            row._cancelledAt ??
+            row.cancelled_at ??
+            row.canceled_at ??
+            row.updated_at ??
+            row.created_at ??
+            null;
+
+        const vendorName =
+            row.vendor_name ??
+            delivery.vendor_name ??
+            currentVendor.vendor_name ??
+            "Vendor";
+
+        const customer =
+            historyCustomer(row) ||
+            historyCustomer(delivery) ||
+            "Customer";
+
+        const payment =
+            row._payment ??
+            delivery.source_order_type ??
+            delivery.payment_method ??
+            delivery.payment ??
+            "—";
+
+        return `
+        <div class="history-card cancelled-history-card">
+
+            <div class="history-card-top">
+                <div>
+                    <div class="history-card-title">
+                        Order #${escapeHTML(source)}
+                    </div>
+
+                    <div class="history-card-time">
+                        Packed on
+                        ${escapeHTML(
+                            formatHistoryDate(packedAt)
+                        )}
+                        <br>
+                        Cancelled on
+                        ${escapeHTML(
+                            formatHistoryDate(cancelledAt)
+                        )}
+                    </div>
+                </div>
+
+                <div class="history-pill cancel">
+                    CANCELLED
+                </div>
+            </div>
+
+            <div class="history-card-meta">
+
+                <strong>Packed by:</strong>
+                ${escapeHTML(vendorName)}
+                <br>
+
+                <strong>Customer:</strong>
+                ${escapeHTML(customer)}
+                <br>
+
+                <strong>Items:</strong>
+                ${qty || items.length || 0}
+                <br>
+
+                <strong>Cancelled product amount:</strong>
+                <span class="cancelled-amount">
+                    −₹${Number(amount || 0).toFixed(2)}
+                </span>
+                <br>
+
+                <strong>Payment:</strong>
+                ${escapeHTML(payment)}
+
+            </div>
+
+        </div>`;
+    }).join("");
+}
+
+packedHistoryBtn?.addEventListener("click",loadPackedHistory);
+cancelledHistoryBtn?.addEventListener("click",loadCancelledHistory);
+historyCloseBtn?.addEventListener("click",closeHistorySheet);
+historySheetBackdrop?.addEventListener("click",e=>{ if(e.target===historySheetBackdrop) closeHistorySheet(); });
 
 async function restoreLogin(){
 
