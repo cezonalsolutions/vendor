@@ -1133,11 +1133,29 @@ function normalizeTable(
     value
 ){
 
-    return String(
-        value || ""
-    )
-    .trim()
-    .toLowerCase();
+    const raw =
+        String(
+            value || ""
+        )
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g,"_")
+        .replace(/-/g,"_");
+
+    const aliases = {
+        fooditems:"food_items",
+        food_item:"food_items",
+        foods_items:"food_items",
+        freshproducts:"fresh_products",
+        fresh_product:"fresh_products",
+        icecream:"icecreams",
+        ice_creams:"icecreams",
+        cakes_products:"cakes",
+        cafe:"cezoocafe",
+        cezoo_cafe:"cezoocafe"
+    };
+
+    return aliases[raw] || raw;
 
 }
 
@@ -1227,23 +1245,32 @@ function getProductId(
     item
 ){
 
-    const id =
-        Number(
+    const raw =
+        item?.product_id ??
+        item?.productId ??
+        item?.id ??
+        item?.item_id ??
+        item?.food_id ??
+        item?.cake_id ??
+        null;
 
-            item.product_id ??
+    if(
+        raw === null ||
+        raw === undefined ||
+        String(raw).trim() === ""
+    ){
+        return null;
+    }
 
-            item.productId ??
+    const text =
+        String(raw).trim();
 
-            item.id ??
+    const numeric =
+        Number(text);
 
-            item.item_id
-
-        );
-
-
-    return Number.isFinite(id)
-        ? id
-        : null;
+    return Number.isFinite(numeric)
+        ? numeric
+        : text;
 
 }
 
@@ -1258,7 +1285,7 @@ function productKey(
         +
         ":"
         +
-        Number(id)
+        String(id ?? "").trim()
     );
 
 }
@@ -1310,9 +1337,17 @@ function getPrice(
 
         item.sale_price,
 
+        item.selling_price,
+
+        item.offer_price,
+
         product?.discount_price,
 
         product?.sale_price,
+
+        product?.selling_price,
+
+        product?.offer_price,
 
         product?.price,
 
@@ -1359,11 +1394,19 @@ function getProductName(
 
         item.productName ||
 
+        item.item_name ||
+
+        item.cake_name ||
+
         item.title ||
 
         product?.name ||
 
         product?.product_name ||
+
+        product?.item_name ||
+
+        product?.cake_name ||
 
         product?.title ||
 
@@ -1547,11 +1590,17 @@ function getImage(
 
         item.product_image ||
 
+        item.photo ||
+
         product?.image1 ||
 
         product?.image ||
 
         product?.image_url ||
+
+        product?.product_image ||
+
+        product?.photo ||
 
         ""
 
@@ -2522,7 +2571,7 @@ async function loadVendorProducts(){
                     ...product,
 
                     product_table:
-                        table
+                        normalizeTable(table)
 
                 });
 
@@ -2586,31 +2635,19 @@ function prepareVendorOrder(
     config
 ){
 
-    if(
-        !row
-    ){
+    if(!row){
         return null;
     }
 
-
     const status =
         String(
-
             row.order_status ||
-
             row.status ||
-
             ""
-
         )
         .toLowerCase()
-        .trim();
-
-
-    /*
-    PACKED / DELIVERED / CANCELLED
-    should not return after refresh.
-    */
+        .trim()
+        .replace(/\s+/g,"_");
 
     if(
         status === "packed" ||
@@ -2621,85 +2658,141 @@ function prepareVendorOrder(
         return null;
     }
 
-
     const items =
-        getOrderItems(
-            row
-        );
+        getOrderItems(row);
 
-
-    if(
-        !items.length
-    ){
+    if(!items.length){
         return null;
     }
-
 
     const productMap =
         createVendorProductMap();
 
-
     const matching = [];
 
+    items.forEach(item=>{
 
-    items.forEach(
-        item => {
+        let table =
+            getProductTable(item);
 
+        const id =
+            getProductId(item);
 
-            const table =
-                getProductTable(item);
+        let product = null;
 
-
-            const id =
-                getProductId(item);
-
-
-            if(
-                !table ||
-                id === null
-            ){
-                return;
-            }
-
-
-            const product =
+        /*
+          Normal path: exact product table + product ID.
+        */
+        if(
+            table &&
+            id !== null
+        ){
+            product =
                 productMap.get(
+                    productKey(table,id)
+                ) || null;
+        }
 
-                    productKey(
-                        table,
-                        id
-                    )
-
+        /*
+          Some food order payloads have the product ID but the
+          product table can be missing/old/aliased.
+          Only infer when exactly ONE assigned vendor product has
+          that ID, preventing another vendor/table from receiving it.
+        */
+        if(
+            !product &&
+            id !== null
+        ){
+            const idMatches =
+                vendorProducts.filter(
+                    candidate =>
+                        String(candidate.id) ===
+                        String(id)
                 );
 
-
-            if(product){
-
-                matching.push({
-
-                    ...item,
-
-                    _product:
-                        product
-
-                });
-
+            if(idMatches.length === 1){
+                product=idMatches[0];
+                table=normalizeTable(
+                    product.product_table
+                );
             }
-
-
         }
-    );
 
+        /*
+          Last safe fallback for legacy food payloads:
+          match a unique assigned product by normalized name.
+        */
+        if(!product){
 
-    if(
-        !matching.length
-    ){
+            const itemName =
+                String(
+                    item.product_name ||
+                    item.item_name ||
+                    item.name ||
+                    item.title ||
+                    ""
+                )
+                .trim()
+                .toLowerCase();
+
+            if(itemName){
+                const nameMatches =
+                    vendorProducts.filter(candidate=>{
+                        const candidateName =
+                            String(
+                                candidate.product_name ||
+                                candidate.item_name ||
+                                candidate.cake_name ||
+                                candidate.name ||
+                                candidate.title ||
+                                ""
+                            )
+                            .trim()
+                            .toLowerCase();
+
+                        return candidateName === itemName;
+                    });
+
+                if(nameMatches.length === 1){
+                    product=nameMatches[0];
+                    table=normalizeTable(
+                        product.product_table
+                    );
+                }
+            }
+        }
+
+        if(!product){
+            return;
+        }
+
+        matching.push({
+            ...item,
+
+            /*
+              Keep a canonical table/id in the vendor copy.
+              This is especially important for food_items orders.
+            */
+            product_table:
+                normalizeTable(
+                    product.product_table ||
+                    table
+                ),
+
+            product_id:
+                product.id,
+
+            _product:
+                product
+        });
+
+    });
+
+    if(!matching.length){
         return null;
     }
 
-
     return {
-
         ...row,
 
         _sourceTable:
@@ -2722,11 +2815,9 @@ function prepareVendorOrder(
 
         _sentToDelivery:
             false
-
     };
 
 }
-
 
 function addOrReplaceOrder(
     row,
@@ -3896,7 +3987,11 @@ async function(
         order from coming back after refresh.
         */
 
+        const packedAt =
+            new Date().toISOString();
+
         const {
+            data:packedRow,
             error
         } =
         await sb
@@ -3905,19 +4000,40 @@ async function(
         )
         .update({
             order_status:"packed",
-            vendor_id:String(currentVendor.id),
+
+            /*
+              Original order/vendor ownership follows public.vendors(id).
+              Do not write vendor_login.id here.
+            */
+            vendor_id:getProductVendorId(),
+
             vendor_name:currentVendor.vendor_name || "",
-            vendor_packed_at:new Date().toISOString(),
+            vendor_packed_at:packedAt,
             vendor_packed_id:`${currentVendor.id}-${id}`
         })
         .eq(
             "id",
             id
-        );
+        )
+        .select("id,order_status,vendor_id,vendor_name,vendor_packed_at")
+        .maybeSingle();
 
 
         if(error){
             throw error;
+        }
+
+        if(
+            !packedRow ||
+            String(
+                packedRow.order_status || ""
+            )
+            .trim()
+            .toLowerCase() !== "packed"
+        ){
+            throw new Error(
+                "Order status was not updated to packed"
+            );
         }
 
 
@@ -3942,6 +4058,13 @@ async function(
 
 
         renderOrders();
+
+        loadAnalyticsOrders().catch(error=>{
+            console.warn(
+                "Analytics refresh after pack:",
+                error
+            );
+        });
 
 
         toast(
@@ -4010,6 +4133,8 @@ function renderProducts(){
                 const name =
                     product.name ||
                     product.product_name ||
+                    product.item_name ||
+                    product.cake_name ||
                     product.title ||
                     `Product ${product.id}`;
 
@@ -4951,6 +5076,8 @@ document
 
 
     currentVendor = null;
+
+    productVendorId = null;
 
     vendorProducts = [];
 
