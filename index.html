@@ -98,6 +98,45 @@ button,input{font:inherit} button{cursor:pointer}
 .product-source{margin-top:5px;color:#a0a3a9;font-size:8px;font-weight:650}
 .product-detail-list{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
 .product-detail-chip{min-height:21px;padding:0 7px;display:inline-flex;align-items:center;border-radius:7px;background:#f2f3f4;color:#686c73;font-size:8px;font-weight:700}
+
+.product-row-details{
+    margin-top:9px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+.product-row-detail{
+    display:grid;
+    grid-template-columns:minmax(82px,.62fr) minmax(0,1.38fr);
+    gap:8px;
+    align-items:start;
+    padding:6px 8px;
+    border-radius:8px;
+    background:#f7f7f8;
+}
+.product-row-detail-label{
+    color:#969aa1;
+    font-size:7px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.25px;
+    overflow-wrap:anywhere;
+}
+.product-row-detail-value{
+    color:#454950;
+    font-size:9px;
+    font-weight:700;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+}
+.product-row-detail.highlight{
+    background:#f1f2f4;
+}
+.product-row-detail.highlight .product-row-detail-label,
+.product-row-detail.highlight .product-row-detail-value{
+    color:#2f3238;
+}
+
 .qty-box{min-width:48px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f2f3f4;color:#222;font-size:12px;font-weight:800}
 
 .order-summary{display:block;padding:15px 2px 0;border-top:1px solid #dedfe2;background:transparent}
@@ -1672,6 +1711,207 @@ function getOrderItemPackDetails(
 
     return details;
 }
+
+function cleanProductDetailLabel(
+    key
+){
+    return String(key || "")
+        .replace(/_/g," ")
+        .replace(/\b\w/g,char=>char.toUpperCase());
+}
+
+
+function isHiddenProductDetailKey(
+    key
+){
+
+    const hidden = new Set([
+        "id",
+        "vendor_id",
+        "vendor_name",
+        "vendor_assigned_at",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+        "image",
+        "image1",
+        "image2",
+        "image_url",
+        "product_image",
+        "food_image",
+        "dish_image",
+        "photo",
+        "original_price",
+        "discount_price",
+        "sale_price",
+        "selling_price",
+        "offer_price",
+        "price",
+        "mrp",
+        "prices"
+    ]);
+
+    return hidden.has(
+        String(key || "")
+            .trim()
+            .toLowerCase()
+    );
+
+}
+
+
+function normalizeProductDetailValue(
+    value
+){
+
+    if(
+        value === null ||
+        value === undefined
+    ){
+        return "";
+    }
+
+    if(typeof value === "boolean"){
+        return value
+            ? "Yes"
+            : "No";
+    }
+
+    if(
+        typeof value === "object"
+    ){
+        try{
+            return JSON.stringify(value);
+        }catch(error){
+            return "";
+        }
+    }
+
+    return String(value).trim();
+
+}
+
+
+function getProductRowDetailEntries(
+    product
+){
+
+    if(
+        !product ||
+        typeof product !== "object"
+    ){
+        return [];
+    }
+
+    /*
+      Always show these first when they exist.
+      restaurant_food_items specifically uses:
+      item_name + short_description.
+    */
+    const priority = [
+        "item_name",
+        "short_description",
+        "product_name",
+        "restaurant_name",
+        "quantity",
+        "unit",
+        "weight",
+        "size",
+        "pack_size",
+        "volume",
+        "category",
+        "sub_txt",
+        "bakery_name",
+        "cake_weight",
+        "cake_type",
+        "prepared",
+        "is_open",
+        "is_available"
+    ];
+
+    const entries = [];
+    const used = new Set();
+
+    const addKey = key => {
+
+        if(
+            used.has(key) ||
+            isHiddenProductDetailKey(key) ||
+            !Object.prototype.hasOwnProperty.call(
+                product,
+                key
+            )
+        ){
+            return;
+        }
+
+        const value =
+            normalizeProductDetailValue(
+                product[key]
+            );
+
+        if(!value){
+            return;
+        }
+
+        used.add(key);
+
+        entries.push({
+            key,
+            label:
+                cleanProductDetailLabel(key),
+            value,
+            highlight:
+                key === "item_name" ||
+                key === "short_description"
+        });
+    };
+
+    priority.forEach(addKey);
+
+    /*
+      Then show every other useful scalar column from the exact
+      Supabase product row. This means if restaurant_food_items ID 15
+      has extra columns, the vendor sees them too.
+    */
+    Object.keys(product)
+        .sort()
+        .forEach(addKey);
+
+    return entries;
+}
+
+
+function renderProductRowDetails(
+    product
+){
+
+    const entries =
+        getProductRowDetailEntries(
+            product
+        );
+
+    if(!entries.length){
+        return "";
+    }
+
+    return `
+        <div class="product-row-details">
+            ${entries.map(entry=>`
+                <div class="product-row-detail ${entry.highlight ? "highlight" : ""}">
+                    <div class="product-row-detail-label">
+                        ${escapeHTML(entry.label)}
+                    </div>
+                    <div class="product-row-detail-value">
+                        ${escapeHTML(entry.value)}
+                    </div>
+                </div>
+            `).join("")}
+        </div>
+    `;
+}
+
+
 
 
 function getProductName(
@@ -3709,6 +3949,20 @@ function updateOrderPager(){
         return;
     }
 
+    /*
+      1/2, 2/2 pager belongs ONLY to the Orders page.
+      Never show it on Analytics, Products or Profile.
+    */
+    const ordersPageActive =
+        document
+            .getElementById("ordersPage")
+            ?.classList.contains("active");
+
+    if(!ordersPageActive){
+        pager.classList.remove("show");
+        return;
+    }
+
     if(!total){
         pager.classList.remove("show");
         count.textContent = "0/0";
@@ -3962,8 +4216,10 @@ function renderOrders(){
                                 getProductTable(item);
 
 
-                            const productId =
-                                getProductId(item);
+                            const fullRowDetails =
+                                renderProductRowDetails(
+                                    product
+                                );
 
 
                             return `
@@ -4039,9 +4295,11 @@ function renderOrders(){
                                         <div class="product-source">
 
                                             ${escapeHTML(tableName)}
-                                            · ID ${escapeHTML(productId)}
 
                                         </div>
+
+
+                                        ${fullRowDetails}
 
                                     </div>
 
@@ -4163,8 +4421,9 @@ function renderOrders(){
         </article>
 
         <div class="order-swipe-hint">
+            <i class="fa-solid fa-arrow-left"></i>
+            Swipe both sides
             <i class="fa-solid fa-arrow-right"></i>
-            Swipe right for next order
         </div>
 
         </div>
@@ -4456,8 +4715,11 @@ function attachOrderSwipe(){
 
         const threshold =
             Math.min(
-                92,
-                shell.clientWidth * .20
+                72,
+                Math.max(
+                    42,
+                    shell.clientWidth * .14
+                )
             );
 
         /*
@@ -4534,6 +4796,20 @@ function attachOrderSwipe(){
     shell.addEventListener(
         "touchend",
         end,
+        {
+            passive:true
+        }
+    );
+
+
+    shell.addEventListener(
+        "touchcancel",
+        ()=>{
+            orderSwipeDragging=false;
+            track.classList.remove("swipe-moving");
+            track.style.transform="";
+            track.style.opacity="";
+        },
         {
             passive:true
         }
@@ -5054,6 +5330,14 @@ function renderProducts(){
                         product
                     );
 
+                const shortDescription =
+                    String(
+                        product.short_description ||
+                        product.description ||
+                        product.sub_txt ||
+                        ""
+                    ).trim();
+
 
                 const image =
                     product.image1 ||
@@ -5158,6 +5442,16 @@ function renderProducts(){
                                 ? `
                                     <div class="product-telugu">
                                         ${escapeHTML(teluguName)}
+                                    </div>
+                                `
+                                : ""
+                            }
+
+                            ${
+                                shortDescription
+                                ? `
+                                    <div class="product-telugu">
+                                        ${escapeHTML(shortDescription)}
                                     </div>
                                 `
                                 : ""
@@ -5945,6 +6239,24 @@ function openPage(
         ? "grid"
 
         : "none";
+
+
+    const orderPager =
+        document.getElementById(
+            "orderPager"
+        );
+
+    if(orderPager){
+        orderPager.classList.toggle(
+            "show",
+            pageId === "ordersPage" &&
+            vendorOrders.length > 0
+        );
+    }
+
+    if(pageId === "ordersPage"){
+        updateOrderPager();
+    }
 
 
     window.scrollTo({
