@@ -541,36 +541,26 @@ button,input{font:inherit} button{cursor:pointer}
 
 
 /* =========================================================
-   CLEAN VENDOR UI OVERRIDES
+   CEZOO VENDOR - CUSTOMER STYLE PRODUCT/ORDER UI
 ========================================================= */
 
 .order-card{
     background:#fff;
-    border:1px solid #ececef;
+    border:1px solid #e9eaed;
     border-radius:18px;
     padding:14px;
-    box-shadow:0 7px 22px rgba(20,22,26,.05);
+    box-shadow:0 6px 22px rgba(20,22,26,.05);
 }
 
 .order-top{
     margin-top:0;
     padding:0 0 12px;
-    border-bottom:1px solid #eeeeef;
+    border-bottom:1px solid #ededf0;
 }
 
-.order-id{
-    font-size:15px;
-    font-weight:800;
-}
-
-.order-time{
-    font-size:9px;
-}
-
-.payment-chip{
-    background:#f4f5f6;
-    font-size:10px;
-}
+.order-id{font-size:15px}
+.order-time{font-size:9px}
+.payment-chip{font-size:10px;background:#f4f5f6}
 
 .items-head,
 .product-source,
@@ -587,12 +577,11 @@ button,input{font:inherit} button{cursor:pointer}
 
 .order-item{
     display:grid;
-    grid-template-columns:58px minmax(0,1fr);
+    grid-template-columns:64px minmax(0,1fr) auto;
     gap:11px;
     align-items:center;
-    min-height:76px;
-    padding:10px 0;
-    border-bottom:1px solid #eeeeef;
+    padding:12px 0;
+    border-bottom:1px solid #ededf0;
 }
 
 .order-item:last-child{
@@ -600,9 +589,9 @@ button,input{font:inherit} button{cursor:pointer}
 }
 
 .order-image{
-    width:58px;
-    height:58px;
-    border-radius:12px;
+    width:64px;
+    height:64px;
+    border-radius:13px;
     background:#f5f5f6;
 }
 
@@ -612,127 +601,126 @@ button,input{font:inherit} button{cursor:pointer}
     object-fit:contain;
 }
 
-.order-product{
-    min-width:0;
-}
-
 .product-title{
     font-size:13px;
     line-height:1.35;
     font-weight:800;
-    color:#1f2024;
 }
 
-.order-simple-meta{
-    margin-top:5px;
-    color:#70747b;
+.vendor-order-pack{
+    margin-top:4px;
+    color:#777c83;
     font-size:10px;
-    font-weight:650;
+    line-height:1.35;
+    font-weight:600;
 }
 
-.order-simple-total{
+.vendor-order-qty{
     margin-top:5px;
-    color:#202126;
+    color:#555b63;
+    font-size:10px;
+    font-weight:700;
+}
+
+.vendor-order-line-total{
+    min-width:66px;
+    text-align:right;
     font-size:12px;
     font-weight:800;
+    color:#202126;
 }
 
 .customer-strip{
-    margin-top:7px;
+    margin-top:5px;
     padding:12px 0;
-    border-top:1px solid #eeeeef;
+    border-top:1px solid #ededf0;
     border-bottom:0;
 }
 
-.customer-name{
-    font-size:13px;
-}
-
-.customer-meta{
-    font-size:9px;
-}
-
-.distance-badge{
-    min-height:25px;
-    font-size:9px;
-}
+.customer-name{font-size:13px}
+.customer-meta{font-size:9px}
+.distance-badge{font-size:9px;min-height:25px}
 
 .order-summary{
     padding:12px 0 0;
-    border-top:1px solid #eeeeef;
+    border-top:1px solid #ededf0;
 }
 
-.summary-label{
-    font-size:8px;
-}
-
-.summary-value{
-    font-size:18px;
-}
+.summary-label{font-size:8px}
+.summary-value{font-size:18px}
 
 .pack-btn{
     height:46px;
     border-radius:12px;
 }
 
-.products-list{
-    gap:9px;
-}
-
+/* Products page */
 .product-card{
-    grid-template-columns:58px minmax(0,1fr) auto;
-    gap:10px;
-    padding:11px;
-    border-radius:14px;
+    grid-template-columns:62px minmax(0,1fr) auto;
+    gap:11px;
+    padding:12px;
+    border-radius:15px;
 }
 
 .product-image{
-    width:58px;
-    height:58px;
-}
-
-.product-name{
-    font-size:12px;
-}
-
-.product-telugu{
-    font-size:9px;
+    width:62px;
+    height:62px;
 }
 
 .product-table-name{
-    display:none;
+    display:none !important;
+}
+
+.product-name{
+    font-size:13px;
+    line-height:1.35;
+}
+
+.vendor-product-pack{
+    margin-top:5px;
+    color:#666b72;
+    font-size:10px;
+    font-weight:650;
+    line-height:1.35;
+}
+
+.product-meta{
+    margin-top:7px;
 }
 
 .product-meta-chip{
-    min-height:24px;
+    min-height:25px;
     font-size:8px;
-}
-
-.stock-text{
-    font-size:7px;
 }
 
 .stock-area.no-control{
     opacity:.55;
 }
 
-@media(max-width:420px){
+@media(max-width:430px){
     .order-item{
-        grid-template-columns:54px minmax(0,1fr);
+        grid-template-columns:58px minmax(0,1fr) auto;
+        gap:9px;
     }
 
     .order-image{
-        width:54px;
-        height:54px;
+        width:58px;
+        height:58px;
+    }
+
+    .vendor-order-line-total{
+        min-width:58px;
+        font-size:11px;
     }
 
     .product-card{
-        grid-template-columns:54px minmax(0,1fr) auto;
+        grid-template-columns:56px minmax(0,1fr) auto;
+        gap:9px;
     }
 
     .product-image{
-        width:54px;
-        height:54px;
+        width:56px;
+        height:56px;
     }
 }
 
@@ -2250,62 +2238,372 @@ function getProductUnitValue(
 }
 
 
-function getEditablePriceKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "discount_price",
-            "sale_price",
-            "price",
-            "original_price",
-            "mrp"
-        ]
-    );
+function getEditablePriceKey(product){
+    return getVendorPriceEditorKey(product);
 }
 
 
-function getEditableQuantityKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "quantity",
-            "qty",
-            "weight",
-            "size",
-            "pack_size",
-            "volume"
-        ]
-    );
+function getEditableQuantityKey(product){
+    return getVendorQuantityEditorKey(product);
 }
 
 
-function getEditableUnitKey(
-    product
-){
-
-    return firstExistingKey(
-        product,
-        [
-            "unit",
-            "units",
-            "quantity_unit",
-            "weight_unit",
-            "uom"
-        ]
-    );
+function getEditableUnitKey(product){
+    return getVendorUnitEditorKey(product);
 }
 
 
 
-function getProductAvailabilityKey(
+/* =========================================================
+   CUSTOMER-STYLE PRODUCT VALUE RESOLVER
+
+   This mirrors the working Your Orders logic so Vendor sees the
+   same size / pack / quantity text that the customer sees.
+========================================================= */
+
+function vendorFirstImage(value){
+
+    if(!value){
+        return "";
+    }
+
+    if(Array.isArray(value)){
+
+        const first =
+            value.find(
+                image =>
+                    typeof image === "string" &&
+                    image.trim()
+            );
+
+        return first
+            ? first.trim()
+            : "";
+    }
+
+    if(typeof value === "object"){
+
+        return String(
+            value.url ||
+            value.src ||
+            value.image ||
+            ""
+        ).trim();
+    }
+
+    const text =
+        String(value).trim();
+
+    if(
+        text.startsWith("[") ||
+        text.startsWith("{")
+    ){
+        try{
+            return vendorFirstImage(
+                JSON.parse(text)
+            );
+        }catch(error){}
+    }
+
+    return text;
+}
+
+
+function getVendorProductImage(source){
+
+    if(!source){
+        return "";
+    }
+
+    const directCandidates = [
+        source.image1,
+        source.image,
+        source.image_url,
+        source.product_image,
+        source.product_image_url,
+        source.food_image,
+        source.dish_image,
+        source.photo,
+        source.photo_url,
+        source.thumbnail,
+        source.thumbnail_url,
+        source.picture,
+        source.picture_url,
+        source.cover_image,
+        source.main_image
+    ];
+
+    for(const candidate of directCandidates){
+
+        const image =
+            vendorFirstImage(
+                candidate
+            );
+
+        if(image){
+            return image;
+        }
+    }
+
+    const collectionCandidates = [
+        source.images,
+        source.product_images,
+        source.gallery,
+        source.photos
+    ];
+
+    for(const candidate of collectionCandidates){
+
+        const image =
+            vendorFirstImage(
+                candidate
+            );
+
+        if(image){
+            return image;
+        }
+    }
+
+    return "";
+}
+
+
+function getVendorProductDisplayName(
+    item,
     product
 ){
+
+    const source =
+        product || {};
+
+    /*
+     * restaurant_food_items customer screen uses item_name as the
+     * product name. For every other product table we use the same
+     * broad name fallback as the customer order screen.
+     */
+    return String(
+        item?.name ||
+        item?.product_name ||
+        item?.title ||
+        item?.item_name ||
+        item?.food_name ||
+        item?.dish_name ||
+        item?.restaurant_item_name ||
+        item?.cake_name ||
+        source.name ||
+        source.product_name ||
+        source.title ||
+        source.item_name ||
+        source.food_name ||
+        source.dish_name ||
+        source.restaurant_item_name ||
+        source.cake_name ||
+        `Product ${getProductId(item) || source.id || ""}`
+    ).trim();
+}
+
+
+function getVendorPackValue(source){
+
+    if(!source){
+        return "";
+    }
+
+    /*
+     * CAKES
+     */
+    const cakeWeight =
+        source.cake_weight;
+
+    if(
+        cakeWeight !== undefined &&
+        cakeWeight !== null &&
+        String(cakeWeight).trim()
+    ){
+        return String(cakeWeight)
+            .replace(/\s+/g," ")
+            .trim();
+    }
+
+    /*
+     * CAFE and other tables sometimes store a complete descriptive
+     * quantity in one field:
+     *   300ml / Small Pack / Medium Pack / Half / Full
+     */
+    const directQuantity =
+        source.quantity;
+
+    if(
+        directQuantity !== undefined &&
+        directQuantity !== null
+    ){
+        const text =
+            String(directQuantity)
+                .replace(/\s+/g," ")
+                .trim();
+
+        if(
+            text &&
+            (
+                /[a-zA-Z]/.test(text) ||
+                /\b(half|full|small|medium|large|regular|jumbo|pack|ml|ltr|litre|liter|kg|gm|g|pcs|pc|piece|pieces)\b/i
+                    .test(text)
+            )
+        ){
+            return text;
+        }
+    }
+
+    /*
+     * FOOD / ICE CREAM / CAFE / CAKES / OTHER STORES.
+     * Same broad field order used by the customer order code.
+     */
+    const direct = [
+        source.food_quantity,
+        source.food_size,
+        source.portion,
+        source.portion_size,
+        source.serving,
+        source.serving_size,
+        source.half_full,
+        source.half_or_full,
+
+        source.icecream_quantity,
+        source.icecream_size,
+
+        source.pack_text,
+        source.pack,
+        source.pack_size,
+        source.package_size,
+        source.package,
+
+        source.net_quantity,
+        source.net_content,
+
+        source.variant_label,
+        source.variant_name,
+        source.variant_text,
+        source.variant,
+
+        source.option_name,
+        source.option_label,
+        source.option_text,
+        source.option,
+
+        source.size_label,
+        source.size_name,
+        source.size,
+
+        source.weight_label,
+        source.weight_text
+    ];
+
+    for(const value of direct){
+
+        if(
+            value !== undefined &&
+            value !== null &&
+            String(value).trim()
+        ){
+            return String(value)
+                .replace(/\s+/g," ")
+                .trim();
+        }
+    }
+
+    /*
+     * GROCERIES / FRESH:
+     * quantity + unit
+     */
+    const quantity =
+        source.product_quantity ??
+        source.net_weight ??
+        source.weight ??
+        source.quantity_value ??
+        source.qty_value ??
+        source.quantity ??
+        source.qty ??
+        "";
+
+    const unit =
+        source.product_unit ??
+        source.weight_unit ??
+        source.measurement_unit ??
+        source.quantity_unit ??
+        source.unit ??
+        source.units ??
+        source.uom ??
+        "";
+
+    const quantityText =
+        String(quantity ?? "")
+            .trim();
+
+    const unitText =
+        String(unit ?? "")
+            .trim();
+
+    if(
+        quantityText &&
+        unitText
+    ){
+        return `${quantityText} ${unitText}`
+            .replace(/\s+/g," ")
+            .trim();
+    }
+
+    if(quantityText){
+        return quantityText
+            .replace(/\s+/g," ")
+            .trim();
+    }
+
+    if(unitText){
+        return unitText
+            .replace(/\s+/g," ")
+            .trim();
+    }
+
+    return "";
+}
+
+
+function getVendorOrderPackText(
+    item,
+    product
+){
+
+    /*
+     * For restaurant_food_items, the customer order screen gives
+     * priority to item_name as its sub/pack text.
+     */
+    if(
+        getProductTable(item) ===
+        "restaurant_food_items"
+    ){
+        const restaurantItemText =
+            String(
+                product?.item_name ||
+                item?.item_name ||
+                ""
+            )
+            .trim();
+
+        if(restaurantItemText){
+            return restaurantItemText;
+        }
+    }
+
+    return (
+        getVendorPackValue(item) ||
+        getVendorPackValue(product) ||
+        ""
+    );
+}
+
+
+function getVendorProductAvailabilityKey(product){
+
     return firstExistingKey(
         product,
         [
@@ -2319,11 +2617,10 @@ function getProductAvailabilityKey(
 }
 
 
-function getProductAvailabilityValue(
-    product
-){
+function getVendorProductAvailability(product){
+
     const key =
-        getProductAvailabilityKey(
+        getVendorProductAvailabilityKey(
             product
         );
 
@@ -2331,46 +2628,41 @@ function getProductAvailabilityValue(
         return true;
     }
 
-    const raw =
+    const value =
         product[key];
 
-    if(typeof raw === "boolean"){
-        return raw;
+    if(typeof value === "boolean"){
+        return value;
     }
 
-    if(typeof raw === "number"){
-        return raw !== 0;
+    if(typeof value === "number"){
+        return value !== 0;
     }
 
-    const value =
-        String(
-            raw ?? ""
-        )
-        .trim()
-        .toLowerCase();
+    const text =
+        String(value ?? "")
+            .trim()
+            .toLowerCase();
 
-    if(
-        value === "false" ||
-        value === "0" ||
-        value === "no" ||
-        value === "out" ||
-        value === "out_of_stock" ||
-        value === "closed" ||
-        value === "unavailable"
-    ){
-        return false;
-    }
-
-    return true;
+    return ![
+        "false",
+        "0",
+        "no",
+        "out",
+        "out_of_stock",
+        "closed",
+        "unavailable"
+    ].includes(text);
 }
 
 
-function getProductAvailabilityDbValue(
+function getVendorProductAvailabilityDbValue(
     product,
     checked
 ){
+
     const key =
-        getProductAvailabilityKey(
+        getVendorProductAvailabilityKey(
             product
         );
 
@@ -2378,28 +2670,26 @@ function getProductAvailabilityDbValue(
         return null;
     }
 
-    const oldValue =
+    const old =
         product[key];
 
-    if(typeof oldValue === "boolean"){
+    if(typeof old === "boolean"){
         return checked;
     }
 
-    if(typeof oldValue === "number"){
+    if(typeof old === "number"){
         return checked ? 1 : 0;
     }
 
-    const normalized =
-        String(
-            oldValue ?? ""
-        )
-        .trim()
-        .toLowerCase();
+    const text =
+        String(old ?? "")
+            .trim()
+            .toLowerCase();
 
     if(
         key === "is_open" ||
-        normalized === "open" ||
-        normalized === "closed"
+        text === "open" ||
+        text === "closed"
     ){
         return checked
             ? "open"
@@ -2407,8 +2697,8 @@ function getProductAvailabilityDbValue(
     }
 
     if(
-        normalized === "yes" ||
-        normalized === "no"
+        text === "yes" ||
+        text === "no"
     ){
         return checked
             ? "yes"
@@ -2416,8 +2706,8 @@ function getProductAvailabilityDbValue(
     }
 
     if(
-        normalized === "in_stock" ||
-        normalized === "out_of_stock"
+        text === "in_stock" ||
+        text === "out_of_stock"
     ){
         return checked
             ? "in_stock"
@@ -2428,105 +2718,76 @@ function getProductAvailabilityDbValue(
 }
 
 
-function getVendorStoreStatusKey(
-    vendor
-){
+function getVendorQuantityEditorKey(product){
+
+    /*
+     * Exact editable row field.
+     * This includes the quantity/size fields that customer display
+     * can read, so products no longer show blank quantity simply
+     * because their table uses food_size / cake_weight / etc.
+     */
     return firstExistingKey(
-        vendor,
+        product,
         [
-            "store_status",
-            "is_open",
-            "is_available",
-            "status"
+            "quantity",
+            "product_quantity",
+            "food_quantity",
+            "icecream_quantity",
+            "cake_weight",
+            "net_quantity",
+            "net_weight",
+            "weight",
+            "quantity_value",
+            "qty_value",
+            "qty",
+            "portion",
+            "portion_size",
+            "serving",
+            "serving_size",
+            "pack_size",
+            "package_size",
+            "size",
+            "food_size",
+            "icecream_size",
+            "variant",
+            "variant_name"
         ]
     );
 }
 
 
-function vendorStoreIsOpen(
-    vendor
-){
-    const key =
-        getVendorStoreStatusKey(
-            vendor
-        );
+function getVendorUnitEditorKey(product){
 
-    if(!key){
-        return true;
-    }
-
-    const raw =
-        vendor[key];
-
-    if(typeof raw === "boolean"){
-        return raw;
-    }
-
-    if(typeof raw === "number"){
-        return raw !== 0;
-    }
-
-    const value =
-        String(
-            raw ?? ""
-        )
-        .trim()
-        .toLowerCase();
-
-    return !(
-        value === "closed" ||
-        value === "false" ||
-        value === "0" ||
-        value === "no" ||
-        value === "inactive" ||
-        value === "unavailable"
+    return firstExistingKey(
+        product,
+        [
+            "unit",
+            "product_unit",
+            "weight_unit",
+            "measurement_unit",
+            "quantity_unit",
+            "units",
+            "uom"
+        ]
     );
 }
 
 
-function vendorStoreDbValue(
-    vendor,
-    open
-){
-    const key =
-        getVendorStoreStatusKey(
-            vendor
-        );
+function getVendorPriceEditorKey(product){
 
-    if(!key){
-        return null;
-    }
-
-    const oldValue =
-        vendor[key];
-
-    if(typeof oldValue === "boolean"){
-        return open;
-    }
-
-    if(typeof oldValue === "number"){
-        return open ? 1 : 0;
-    }
-
-    if(key === "status"){
-        const old =
-            String(
-                oldValue ?? ""
-            ).toLowerCase();
-
-        if(
-            old === "active" ||
-            old === "inactive"
-        ){
-            return open
-                ? "active"
-                : "inactive";
-        }
-    }
-
-    return open
-        ? "open"
-        : "closed";
+    return firstExistingKey(
+        product,
+        [
+            "discount_price",
+            "selling_price",
+            "sale_price",
+            "offer_price",
+            "price",
+            "original_price",
+            "mrp",
+            "regular_price"
+        ]
+    );
 }
 
 
@@ -3376,9 +3637,12 @@ function setProfile(
 
 
     const open =
-        vendorStoreIsOpen(
-            vendor
-        );
+        String(
+            vendor.store_status ||
+            ""
+        )
+        .toLowerCase() ===
+        "open";
 
 
     storeStatusSwitch.checked =
@@ -3399,173 +3663,93 @@ storeStatusSwitch.addEventListener(
 "change",
 async () => {
 
-    if(!currentVendor){
+    if(
+        !currentVendor
+    ){
         return;
     }
+
 
     const open =
         storeStatusSwitch.checked;
 
+
     storeStatusSwitch.disabled =
         true;
 
+
     try{
 
-        const loginKey =
-            getVendorStoreStatusKey(
-                currentVendor
-            );
 
-        /*
-         * vendor_login rows are not assumed to share one fixed
-         * availability column. Update only a column that actually
-         * exists on this exact login row.
-         */
-        if(loginKey){
+        const {
+            error
+        } =
+        await sb
+        .from(
+            "vendor_login"
+        )
+        .update({
 
-            const loginValue =
-                vendorStoreDbValue(
-                    currentVendor,
-                    open
-                );
+            store_status:
+                open
+                ? "open"
+                : "closed"
 
-            const {
-                data:updatedLogin,
-                error:loginError
-            } =
-                await sb
-                    .from("vendor_login")
-                    .update({
-                        [loginKey]:
-                            loginValue
-                    })
-                    .eq(
-                        "id",
-                        currentVendor.id
-                    )
-                    .select("*")
-                    .maybeSingle();
+        })
+        .eq(
+            "id",
+            currentVendor.id
+        );
 
-            if(loginError){
-                throw loginError;
-            }
 
-            if(updatedLogin){
-                currentVendor =
-                    updatedLogin;
-            }else{
-                currentVendor[loginKey] =
-                    loginValue;
-            }
+        if(error){
+            throw error;
         }
 
-        /*
-         * Keep the matching public.vendors row in sync when it has
-         * its own availability/status column. This is best-effort:
-         * failure here must not undo a successful vendor_login update.
-         */
-        try{
 
-            const {
-                data:productVendorRow,
-                error:vendorReadError
-            } =
-                await sb
-                    .from("vendors")
-                    .select("*")
-                    .eq(
-                        "id",
-                        getProductVendorId()
-                    )
-                    .maybeSingle();
+        currentVendor.store_status =
+            open
+            ? "open"
+            : "closed";
 
-            if(!vendorReadError && productVendorRow){
-
-                const productVendorKey =
-                    getVendorStoreStatusKey(
-                        productVendorRow
-                    );
-
-                if(productVendorKey){
-
-                    const productVendorValue =
-                        vendorStoreDbValue(
-                            productVendorRow,
-                            open
-                        );
-
-                    const {
-                        error:vendorWriteError
-                    } =
-                        await sb
-                            .from("vendors")
-                            .update({
-                                [productVendorKey]:
-                                    productVendorValue
-                            })
-                            .eq(
-                                "id",
-                                getProductVendorId()
-                            );
-
-                    if(vendorWriteError){
-                        console.warn(
-                            "vendors status sync warning:",
-                            vendorWriteError
-                        );
-                    }
-                }
-            }
-
-        }catch(syncError){
-
-            console.warn(
-                "vendors status sync warning:",
-                syncError
-            );
-        }
 
         document.getElementById(
             "storeStatusText"
         ).textContent =
             open
-                ? "Open"
-                : "Closed";
+            ? "Open"
+            : "Closed";
+
 
         toast(
             open
-                ? "Store opened"
-                : "Store closed"
+            ? "Store opened"
+            : "Store closed"
         );
+
 
     }catch(error){
 
-        console.error(
-            "Store status update error:",
-            error
-        );
 
         storeStatusSwitch.checked =
             !open;
 
-        document.getElementById(
-            "storeStatusText"
-        ).textContent =
-            !open
-                ? "Open"
-                : "Closed";
 
         toast(
-            error?.message ||
             "Store update failed",
             true
         );
 
+
     }finally{
+
 
         storeStatusSwitch.disabled =
             false;
+
+
     }
+
 });
 
 
@@ -4625,109 +4809,91 @@ function renderOrders(){
             <div class="items-wrap">
 
                 ${
-                    items
-                    .map(
-                        item => {
+                    items.map(item=>{
 
-                            const product =
-                                item._product;
+                        const product =
+                            item._product ||
+                            {};
 
-                            const image =
-                                getImage(
-                                    item,
-                                    product
-                                );
+                        const image =
+                            getVendorProductImage(
+                                product
+                            ) ||
+                            getVendorProductImage(
+                                item
+                            );
 
-                            const quantity =
-                                getQuantity(
-                                    item
-                                );
+                        const name =
+                            getVendorProductDisplayName(
+                                item,
+                                product
+                            );
 
-                            const lineTotal =
-                                getOrderLineTotal(
-                                    item,
-                                    product
-                                );
+                        const packText =
+                            getVendorOrderPackText(
+                                item,
+                                product
+                            );
 
-                            const packValues =
-                                getOrderItemPackDetails(
-                                    item,
-                                    product
-                                );
+                        const orderedQty =
+                            getQuantity(item);
 
-                            /*
-                             * Keep only the useful quantity/unit text.
-                             * No table name, no database row dump,
-                             * no side labels, no duplicate price blocks.
-                             */
-                            const unitText =
-                                packValues
-                                .filter(value=>{
-                                    const clean =
-                                        String(value ?? "")
-                                        .trim();
+                        const lineTotal =
+                            getOrderLineTotal(
+                                item,
+                                product
+                            );
 
-                                    return (
-                                        clean &&
-                                        clean !==
-                                            String(quantity)
-                                    );
-                                })
-                                .slice(0,2)
-                                .join(" ");
+                        return `
 
-                            return `
+                            <div class="order-item">
 
-                                <div class="order-item">
+                                <div class="order-image">
+                                    ${
+                                        image
+                                        ? `
+                                            <img
+                                                src="${escapeHTML(image)}"
+                                                alt="${escapeHTML(name)}"
+                                                loading="lazy"
+                                            >
+                                        `
+                                        : `
+                                            <i class="fa-solid fa-box"></i>
+                                        `
+                                    }
+                                </div>
 
-                                    <div class="order-image">
+                                <div class="order-product">
 
-                                        ${
-                                            image
-                                            ? `
-                                                <img
-                                                    src="${escapeHTML(image)}"
-                                                    alt=""
-                                                >
-                                            `
-                                            : `
-                                                <i class="fa-solid fa-box"></i>
-                                            `
-                                        }
-
+                                    <div class="product-title">
+                                        ${escapeHTML(name)}
                                     </div>
 
-                                    <div class="order-product">
+                                    ${
+                                        packText
+                                        ? `
+                                            <div class="vendor-order-pack">
+                                                ${escapeHTML(packText)}
+                                            </div>
+                                        `
+                                        : ""
+                                    }
 
-                                        <div class="product-title">
-                                            ${escapeHTML(
-                                                getProductName(
-                                                    item,
-                                                    product
-                                                )
-                                            )}
-                                        </div>
-
-                                        <div class="order-simple-meta">
-                                            Qty ${escapeHTML(quantity)}
-                                            ${
-                                                unitText
-                                                    ? ` • ${escapeHTML(unitText)}`
-                                                    : ""
-                                            }
-                                        </div>
-
-                                        <div class="order-simple-total">
-                                            ₹${lineTotal.toFixed(2)}
-                                        </div>
-
+                                    <div class="vendor-order-qty">
+                                        Quantity: ${escapeHTML(orderedQty)}
                                     </div>
 
                                 </div>
-                            `;
-                        }
-                    )
-                    .join("")
+
+                                <div class="vendor-order-line-total">
+                                    ₹${lineTotal.toFixed(2)}
+                                </div>
+
+                            </div>
+                        `;
+
+                    }).join("")
                 }
 
             </div>
@@ -4801,12 +4967,8 @@ function renderOrders(){
                     class="pack-btn"
                     type="button"
                     onclick="packOrder(
-                        '${escapeHTML(
-                            order._sourceTable
-                        )}',
-                        '${escapeHTML(
-                            order.id
-                        )}',
+                        '${escapeHTML(order._sourceTable)}',
+                        '${escapeHTML(order.id)}',
                         this
                     )"
                 >
@@ -5730,10 +5892,9 @@ function renderProducts(){
 
 
                 const image =
-                    product.image1 ||
-                    product.image ||
-                    product.image_url ||
-                    "";
+                    getVendorProductImage(
+                        product
+                    );
 
 
                 const priceKey =
@@ -5774,13 +5935,18 @@ function renderProducts(){
                     );
 
 
-                const stockKey =
-                    getProductAvailabilityKey(
+                const availabilityKey =
+                    getVendorProductAvailabilityKey(
                         product
                     );
 
                 const stock =
-                    getProductAvailabilityValue(
+                    getVendorProductAvailability(
+                        product
+                    );
+
+                const packText =
+                    getVendorPackValue(
                         product
                     );
 
@@ -5847,6 +6013,16 @@ function renderProducts(){
                             }
 
 
+                            ${
+                                packText
+                                ? `
+                                    <div class="vendor-product-pack">
+                                        ${escapeHTML(packText)}
+                                    </div>
+                                `
+                                : ""
+                            }
+
                             <div class="product-table-name">
                                 ${escapeHTML(product.product_table)}
                             </div>
@@ -5861,7 +6037,9 @@ function renderProducts(){
                                             quantity === null ||
                                             quantity === undefined ||
                                             String(quantity).trim() === ""
-                                            ? "—"
+                                            ? (
+                                                packText || "—"
+                                              )
                                             : quantity
                                         )}
                                     </span>
@@ -5939,7 +6117,7 @@ function renderProducts(){
                                         <input
                                             id="editQty_${domKey}"
                                             type="text"
-                                            value="${escapeHTML(quantity ?? "")}"
+                                            value="${escapeHTML(quantity ?? packText ?? "")}"
                                             ${quantityKey ? "" : "disabled"}
                                         >
                                     </div>
@@ -5977,12 +6155,12 @@ function renderProducts(){
                         </div>
 
 
-                        <div class="stock-area ${stockKey ? "" : "no-control"}">
+                        <div class="stock-area ${availabilityKey ? "" : "no-control"}">
 
                             <span
                                 class="stock-text ${stock ? "on" : "off"}"
                             >
-                                ${stockKey ? (stock ? "IN STOCK" : "OUT") : "NO STOCK FIELD"}
+                                ${availabilityKey ? (stock ? "IN STOCK" : "OUT") : "AVAILABLE"}
                             </span>
 
 
@@ -5991,7 +6169,7 @@ function renderProducts(){
                                 <input
                                     type="checkbox"
                                     ${stock ? "checked" : ""}
-                                    ${stockKey ? "" : "disabled"}
+                                    ${availabilityKey ? "" : "disabled"}
                                     onchange="changeStock(
                                         '${product.product_table}',
                                         '${product.id}',
@@ -6280,7 +6458,7 @@ async function(
         if(!data){
 
             throw new Error(
-                "Product row was not updated. Check vendor assignment."
+                "Product row was not updated. Check this product vendor assignment."
             );
         }
 
@@ -6453,7 +6631,10 @@ async function(
     const product =
         vendorProducts.find(
             item =>
-                item.product_table === table
+                normalizeTable(
+                    item.product_table
+                ) ===
+                    normalizeTable(table)
                 &&
                 String(item.id) ===
                     String(id)
@@ -6472,18 +6653,18 @@ async function(
         return;
     }
 
-    const stockKey =
-        getProductAvailabilityKey(
+    const availabilityKey =
+        getVendorProductAvailabilityKey(
             product
         );
 
-    if(!stockKey){
+    if(!availabilityKey){
 
         checkbox.checked =
             !checkbox.checked;
 
         toast(
-            "This product has no stock/availability column",
+            "Availability field not found for this product",
             true
         );
 
@@ -6494,7 +6675,7 @@ async function(
         checkbox.checked;
 
     const dbValue =
-        getProductAvailabilityDbValue(
+        getVendorProductAvailabilityDbValue(
             product,
             checked
         );
@@ -6504,11 +6685,6 @@ async function(
 
     try{
 
-        /*
-         * Update ONLY the real availability column that exists
-         * on this exact product row. Different tables can use:
-         * stock / in_stock / is_available / available / is_open.
-         */
         const {
             data,
             error
@@ -6516,7 +6692,7 @@ async function(
             await sb
                 .from(table)
                 .update({
-                    [stockKey]:
+                    [availabilityKey]:
                         dbValue
                 })
                 .eq(
@@ -6535,7 +6711,6 @@ async function(
         }
 
         if(!data){
-
             throw new Error(
                 "Product row was not updated"
             );
@@ -6557,11 +6732,11 @@ async function(
     }catch(error){
 
         console.error(
-            "Stock update error:",
+            "Product availability update error:",
             {
                 table,
                 id,
-                stockKey,
+                availabilityKey,
                 error
             }
         );
