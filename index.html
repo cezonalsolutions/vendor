@@ -705,8 +705,7 @@ button,input{font:inherit} button{cursor:pointer}
     margin-top:4px;
     color:#747980;
     font-size:10px;
-    font-weight:700;
-    line-height:1.35;
+    font-weight:650;
 }
 
 .vendor-order-qty{
@@ -2597,85 +2596,6 @@ function getVendorProductPackText(product){
             product.sub_txt ||
             ""
         ).trim();
-    }
-
-    /*
-     * IMPORTANT:
-     * cezoogroceries / fresh_products must show the PRODUCT'S
-     * pack quantity + unit, not the order/cart quantity.
-     *
-     * Examples:
-     *   1 + kg   -> 1 kg
-     *   500 + g  -> 500 g
-     *   1 + pcs  -> 1 pcs
-     *
-     * Read the exact product row first because order-item `qty`
-     * means "how many packs customer ordered".
-     */
-    const productTable =
-        normalizeTable(
-            product.product_table ||
-            product.source_table ||
-            ""
-        );
-
-    if(
-        productTable === "cezoogroceries" ||
-        productTable === "fresh_products"
-    ){
-
-        const groceryQuantity =
-            product.product_quantity ??
-            product.net_quantity ??
-            product.net_weight ??
-            product.weight ??
-            product.quantity_value ??
-            product.qty_value ??
-            product.pack_quantity ??
-            product.quantity ??
-            "";
-
-        const groceryUnit =
-            product.product_unit ??
-            product.weight_unit ??
-            product.measurement_unit ??
-            product.quantity_unit ??
-            product.pack_unit ??
-            product.unit ??
-            product.units ??
-            product.uom ??
-            "";
-
-        const groceryQuantityText =
-            String(
-                groceryQuantity ?? ""
-            ).trim();
-
-        const groceryUnitText =
-            String(
-                groceryUnit ?? ""
-            ).trim();
-
-        if(
-            groceryQuantityText &&
-            groceryUnitText
-        ){
-            return (
-                groceryQuantityText +
-                " " +
-                groceryUnitText
-            )
-            .replace(/\s+/g," ")
-            .trim();
-        }
-
-        if(groceryQuantityText){
-            return groceryQuantityText;
-        }
-
-        if(groceryUnitText){
-            return groceryUnitText;
-        }
     }
 
     const descriptiveQuantity =
@@ -5356,40 +5276,13 @@ function renderOrders(){
                                     : "";
 
                             if(!packText){
-
-                                const orderProductTable =
-                                    getProductTable(
+                                packText =
+                                    getVendorProductPackText(
                                         item
+                                    ) ||
+                                    getVendorProductPackText(
+                                        product
                                     );
-
-                                if(
-                                    orderProductTable ===
-                                        "cezoogroceries"
-                                    ||
-                                    orderProductTable ===
-                                        "fresh_products"
-                                ){
-                                    /*
-                                     * Grocery/Fresh:
-                                     * product row owns pack quantity + unit.
-                                     * Order item owns ordered quantity.
-                                     */
-                                    packText =
-                                        getVendorProductPackText(
-                                            product
-                                        ) ||
-                                        getVendorProductPackText(
-                                            item
-                                        );
-                                }else{
-                                    packText =
-                                        getVendorProductPackText(
-                                            item
-                                        ) ||
-                                        getVendorProductPackText(
-                                            product
-                                        );
-                                }
                             }
 
                             const lineTotal =
@@ -6014,6 +5907,9 @@ async function autoSendToDelivery(
     };
 
 
+    /*
+     * Remove Vendor-UI-only properties.
+     */
     delete payload._sourceTable;
     delete payload._orderType;
     delete payload._payment;
@@ -6041,6 +5937,9 @@ async function autoSendToDelivery(
         "assigned";
 
 
+    /*
+     * delivery_* tables use vendor_login.id.
+     */
     payload.vendor_id =
         currentVendor.id;
 
@@ -6059,33 +5958,27 @@ async function autoSendToDelivery(
         new Date().toISOString();
 
 
+    /*
+     * Send only this vendor's products.
+     */
     payload.items =
         order._vendorItems.map(
             item => {
-
 
                 const clean = {
                     ...item
                 };
 
-
                 delete clean._product;
 
-
                 return clean;
-
             }
         );
 
 
     /*
-    Avoid duplicate sends after a user
-    accidentally taps twice/reloads.
-
-    First check delivery table using
-    source_order_id + vendor_id.
-    */
-
+     * Avoid duplicate sends after repeated taps / refresh.
+     */
     const {
         data:existing,
         error:checkError
@@ -6122,28 +6015,162 @@ async function autoSendToDelivery(
         existing &&
         existing.length
     ){
-
         return;
-
     }
 
 
-    const {
-        error
-    } =
-    await sb
-    .from(
-        order._deliveryTable
-    )
-    .insert(
-        payload
-    );
+    /*
+     * IMPORTANT SCHEMA-COMPATIBILITY FIX
+     * ----------------------------------
+     *
+     * cash_delivery_orders / upi_orders can contain columns that the
+     * delivery tables do not contain.
+     *
+     * Example:
+     *   source order has `knife_fee`
+     *   delivery_cash_orders does NOT have `knife_fee`
+     *
+     * The old code used {...order}, so PostgREST rejected the whole
+     * insert with PGRST204.
+     *
+     * We preserve every column that the delivery table accepts.
+     * If PostgREST reports one missing column, remove ONLY that column
+     * and retry. This also protects against any future source-order-only
+     * columns without hardcoding every possible fee field.
+     */
+
+    const safePayload = {
+        ...payload
+    };
 
 
-    if(error){
+    const removedUnsupportedColumns =
+        [];
+
+
+    const MAX_SCHEMA_RETRIES =
+        40;
+
+
+    for(
+        let attempt = 0;
+        attempt < MAX_SCHEMA_RETRIES;
+        attempt++
+    ){
+
+        const {
+            error
+        } =
+        await sb
+        .from(
+            order._deliveryTable
+        )
+        .insert(
+            safePayload
+        );
+
+
+        if(!error){
+
+            if(
+                removedUnsupportedColumns.length
+            ){
+                console.info(
+                    "Delivery insert ignored unsupported source columns:",
+                    removedUnsupportedColumns
+                );
+            }
+
+            return;
+        }
+
+
+        const errorMessage =
+            String(
+                error.message ||
+                ""
+            );
+
+
+        /*
+         * Typical Supabase/PostgREST error:
+         *
+         * Could not find the 'knife_fee' column of
+         * 'delivery_cash_orders' in the schema cache
+         */
+        const missingColumnMatch =
+            errorMessage.match(
+                /Could not find the ['"]([^'"]+)['"] column/i
+            );
+
+
+        const isMissingColumnError =
+            error.code ===
+                "PGRST204"
+            ||
+            (
+                /schema cache/i.test(
+                    errorMessage
+                )
+                &&
+                /column/i.test(
+                    errorMessage
+                )
+            );
+
+
+        if(
+            isMissingColumnError &&
+            missingColumnMatch &&
+            missingColumnMatch[1]
+        ){
+
+            const missingColumn =
+                missingColumnMatch[1];
+
+
+            /*
+             * Never loop forever on the same error.
+             */
+            if(
+                !Object.prototype.hasOwnProperty.call(
+                    safePayload,
+                    missingColumn
+                )
+            ){
+                throw error;
+            }
+
+
+            delete safePayload[
+                missingColumn
+            ];
+
+
+            removedUnsupportedColumns.push(
+                missingColumn
+            );
+
+
+            console.warn(
+                `Delivery table does not have "${missingColumn}". Retrying without it.`
+            );
+
+
+            continue;
+        }
+
+
+        /*
+         * This is a real insert error, not a schema mismatch.
+         */
         throw error;
     }
 
+
+    throw new Error(
+        "Delivery insert could not match the delivery table schema."
+    );
 }
 
 
