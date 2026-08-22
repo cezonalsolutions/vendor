@@ -93,7 +93,11 @@ button,input{font:inherit} button{cursor:pointer}
 .order-product{min-width:0}
 .product-title{font-size:16px;font-weight:800;line-height:1.4}
 .product-sub{margin-top:5px;color:#8f9399;font-size:10px}
-.product-price{margin-top:6px;font-size:12px;font-weight:700}
+.product-price{margin-top:6px;font-size:12px;font-weight:800}
+.product-line-total{margin-top:3px;color:#2a2d33;font-size:10px;font-weight:800}
+.product-source{margin-top:5px;color:#a0a3a9;font-size:8px;font-weight:650}
+.product-detail-list{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+.product-detail-chip{min-height:21px;padding:0 7px;display:inline-flex;align-items:center;border-radius:7px;background:#f2f3f4;color:#686c73;font-size:8px;font-weight:700}
 .qty-box{min-width:48px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f2f3f4;color:#222;font-size:12px;font-weight:800}
 
 .order-summary{display:block;padding:15px 2px 0;border-top:1px solid #dedfe2;background:transparent}
@@ -933,15 +937,36 @@ function getItemPriceForAnalytics(item,product){
 function getVendorOrderProductAmount(order){
     const items=getOrderItems(order);
     let total=0;
+
     items.forEach(item=>{
         const table=getProductTable(item);
         const id=getProductId(item);
+
+        if(!table || id===null){
+            return;
+        }
+
         const product=vendorProducts.find(
-            p=>normalizeTable(p.product_table)===normalizeTable(table)
-            && String(p.id)===String(id)
+            p=>
+                normalizeTable(p.product_table)===table
+                &&
+                String(p.id)===String(id)
         );
-        total+=getItemPriceForAnalytics(item,product)*getItemQuantityForAnalytics(item);
+
+        /*
+          Only calculate this vendor's exact assigned product.
+          Never count another table's same numeric ID.
+        */
+        if(!product){
+            return;
+        }
+
+        total+=getOrderLineTotal(
+            item,
+            product
+        );
     });
+
     return total;
 }
 function getAnalyticsOrderStatus(order){
@@ -1287,34 +1312,36 @@ function normalizeTable(
     value
 ){
 
-    const raw =
-        String(
-            value || ""
-        )
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g,"_")
-        .replace(/-/g,"_");
+    /*
+      STRICT ROUTING:
+      Customer checkout JS already saves the real Supabase table name
+      into item.product_table. Do not guess a table by ID or product name.
 
-    const aliases = {
-        fooditems:"food_items",
-        food_item:"food_items",
-        foods_items:"food_items",
-        restaurant_food_item:"restaurant_food_items",
-        restaurantfooditems:"restaurant_food_items",
-        restaurant_foods:"restaurant_food_items",
-        restaurant_items:"restaurant_food_items",
-        restaurantfood_items:"restaurant_food_items",
-        freshproducts:"fresh_products",
-        fresh_product:"fresh_products",
-        icecream:"icecreams",
-        ice_creams:"icecreams",
-        cakes_products:"cakes",
-        cafe:"cezoocafe",
-        cezoo_cafe:"cezoocafe"
-    };
+      Known exact tables:
+      - restaurant_food_items
+      - food_items
+      - icecreams
+      - cakes
+      - cezoocafe
+      - cezoogroceries
+      - fresh_products
+    */
+    return String(
+        value || ""
+    )
+    .trim()
+    .toLowerCase();
 
-    return aliases[raw] || raw;
+}
+
+
+function isKnownProductTable(
+    value
+){
+
+    return PRODUCT_TABLES.includes(
+        normalizeTable(value)
+    );
 
 }
 
@@ -1383,19 +1410,22 @@ function getProductTable(
     item
 ){
 
-    return normalizeTable(
+    /*
+      The checkout files save product_table explicitly.
+      product_table is therefore the source of truth.
+      source_table remains only a compatibility read for older saved orders,
+      but it still MUST exactly equal one of PRODUCT_TABLES.
+    */
+    const table =
+        normalizeTable(
+            item?.product_table ||
+            item?.source_table ||
+            ""
+        );
 
-        item.product_table ||
-
-        item.table_name ||
-
-        item.table ||
-
-        item.source_table ||
-
-        ""
-
-    );
+    return isKnownProductTable(table)
+        ? table
+        : "";
 
 }
 
@@ -1404,16 +1434,13 @@ function getProductId(
     item
 ){
 
+    /*
+      Checkout JS saves the original database row id as product_id.
+      Use that exact value. No cross-table guessing by generic item.id.
+    */
     const raw =
         item?.product_id ??
         item?.productId ??
-        item?.id ??
-        item?.item_id ??
-        item?.food_id ??
-        item?.restaurant_food_id ??
-        item?.restaurant_item_id ??
-        item?.dish_id ??
-        item?.cake_id ??
         null;
 
     if(
@@ -1424,15 +1451,7 @@ function getProductId(
         return null;
     }
 
-    const text =
-        String(raw).trim();
-
-    const numeric =
-        Number(text);
-
-    return Number.isFinite(numeric)
-        ? numeric
-        : text;
+    return String(raw).trim();
 
 }
 
@@ -1540,6 +1559,118 @@ function getPrice(
 
     return 0;
 
+}
+
+
+function getOrderUnitPrice(
+    item,
+    product
+){
+
+    /*
+      Use the price captured at checkout first.
+      This is important if the vendor changes product price later.
+    */
+    const values = [
+        item?.unit_price,
+        item?.price,
+        item?.discount_price,
+        item?.sale_price,
+        item?.selling_price,
+        item?.offer_price,
+        product?.discount_price,
+        product?.sale_price,
+        product?.selling_price,
+        product?.offer_price,
+        product?.price,
+        product?.original_price,
+        product?.mrp
+    ];
+
+    for(const value of values){
+        const number=Number(value);
+
+        if(Number.isFinite(number)){
+            return number;
+        }
+    }
+
+    return 0;
+}
+
+
+function getOrderLineTotal(
+    item,
+    product
+){
+
+    const saved =
+        Number(
+            item?.total_price
+        );
+
+    if(Number.isFinite(saved)){
+        return saved;
+    }
+
+    return (
+        getOrderUnitPrice(
+            item,
+            product
+        )
+        *
+        getQuantity(item)
+    );
+
+}
+
+
+function getOrderItemPackDetails(
+    item,
+    product
+){
+
+    /*
+      Exact checkout-specific details:
+      Cafe      -> quantity
+      Cakes     -> cake_weight / cake_type / cake_name_text / bakery_name
+      Food      -> store_name
+      Other rows-> current product pack/weight/unit fields
+    */
+    const details=[];
+
+    const add=value=>{
+        const clean=String(
+            value ?? ""
+        ).trim();
+
+        if(
+            clean &&
+            !details.some(
+                current =>
+                    current.toLowerCase() ===
+                    clean.toLowerCase()
+            )
+        ){
+            details.push(clean);
+        }
+    };
+
+    add(item?.quantity);
+    add(item?.cake_weight);
+    add(item?.cake_type);
+    add(item?.cake_name_text);
+    add(item?.bakery_name);
+    add(item?.store_name);
+
+    add(product?.quantity);
+    add(product?.unit);
+    add(product?.weight);
+    add(product?.size);
+    add(product?.pack_size);
+    add(product?.volume);
+
+    return details;
 }
 
 
@@ -2855,124 +2986,62 @@ function prepareVendorOrder(
 
     items.forEach(item=>{
 
-        let table =
+        /*
+          ABSOLUTE ROUTING KEY:
+          product_table + product_id
+
+          This comes directly from the checkout JS:
+          Food:
+            restaurant_food_items / food_items / icecreams
+          Cakes:
+            cakes
+          Cafe:
+            cezoocafe
+
+          We intentionally DO NOT:
+          - match an ID from another table
+          - match by product name
+          - infer a vendor from duplicate IDs
+
+          Therefore cake ID 24 can never accidentally match
+          restaurant_food_items ID 24, food_items ID 24, etc.
+        */
+        const table =
             getProductTable(item);
 
         const id =
             getProductId(item);
 
-        let product = null;
-
-        /*
-          Normal path: exact product table + product ID.
-        */
         if(
-            table &&
-            id !== null
+            !table ||
+            id === null
         ){
-            product =
-                productMap.get(
-                    productKey(table,id)
-                ) || null;
+            return;
         }
 
-        /*
-          Some food order payloads have the product ID but the
-          product table can be missing/old/aliased.
-          Only infer when exactly ONE assigned vendor product has
-          that ID, preventing another vendor/table from receiving it.
-        */
-        if(
-            !product &&
-            id !== null
-        ){
-            const idMatches =
-                vendorProducts.filter(
-                    candidate =>
-                        String(candidate.id) ===
-                        String(id)
-                );
-
-            if(idMatches.length === 1){
-                product=idMatches[0];
-                table=normalizeTable(
-                    product.product_table
-                );
-            }
-        }
-
-        /*
-          Last safe fallback for legacy food payloads:
-          match a unique assigned product by normalized name.
-        */
-        if(!product){
-
-            const itemName =
-                String(
-                    item.product_name ||
-                    item.item_name ||
-                    item.food_name ||
-                    item.dish_name ||
-                    item.restaurant_item_name ||
-                    item.name ||
-                    item.title ||
-                    ""
+        const product =
+            productMap.get(
+                productKey(
+                    table,
+                    id
                 )
-                .trim()
-                .toLowerCase();
-
-            if(itemName){
-                const nameMatches =
-                    vendorProducts.filter(candidate=>{
-                        const candidateName =
-                            String(
-                                candidate.product_name ||
-                                candidate.item_name ||
-                                candidate.food_name ||
-                                candidate.dish_name ||
-                                candidate.restaurant_item_name ||
-                                candidate.cake_name ||
-                                candidate.name ||
-                                candidate.title ||
-                                ""
-                            )
-                            .trim()
-                            .toLowerCase();
-
-                        return candidateName === itemName;
-                    });
-
-                if(nameMatches.length === 1){
-                    product=nameMatches[0];
-                    table=normalizeTable(
-                        product.product_table
-                    );
-                }
-            }
-        }
+            ) || null;
 
         if(!product){
             return;
         }
 
+        /*
+          loadVendorProducts() already fetched ONLY rows whose
+          vendor_id equals the logged-in vendor's public.vendors.id.
+          So reaching this point proves the exact product belongs
+          to this vendor.
+        */
         matching.push({
             ...item,
-
-            /*
-              Keep a canonical table/id in the vendor copy.
-              This is especially important for food_items orders.
-            */
-            product_table:
-                normalizeTable(
-                    product.product_table ||
-                    table
-                ),
-
-            product_id:
-                product.id,
-
-            _product:
-                product
+            product_table:table,
+            product_id:String(id),
+            _product:product
         });
 
     });
@@ -3777,20 +3846,11 @@ function renderOrders(){
             ) => {
 
                 return (
-
                     sum +
-
-                    getPrice(
+                    getOrderLineTotal(
                         item,
                         item._product
                     )
-
-                    *
-
-                    getQuantity(
-                        item
-                    )
-
                 );
 
             },
@@ -3878,31 +3938,32 @@ function renderOrders(){
 
 
                             const price =
-                                getPrice(
+                                getOrderUnitPrice(
                                     item,
                                     product
                                 );
 
 
-                            const pack =
-                                [
+                            const lineTotal =
+                                getOrderLineTotal(
+                                    item,
+                                    product
+                                );
 
-                                    product?.quantity,
 
-                                    product?.unit,
+                            const details =
+                                getOrderItemPackDetails(
+                                    item,
+                                    product
+                                );
 
-                                    product?.weight,
 
-                                    product?.size
+                            const tableName =
+                                getProductTable(item);
 
-                                ]
-                                .filter(
-                                    value =>
-                                        value !== null &&
-                                        value !== undefined &&
-                                        String(value).trim()
-                                )
-                                .join(" ");
+
+                            const productId =
+                                getProductId(item);
 
 
                             return `
@@ -3943,19 +4004,42 @@ function renderOrders(){
                                         </div>
 
 
-                                        <div class="product-sub">
-
-                                            ${escapeHTML(
-                                                pack ||
-                                                getProductTable(item)
-                                            )}
-
-                                        </div>
+                                        ${
+                                            details.length
+                                            ? `
+                                                <div class="product-detail-list">
+                                                    ${details.map(detail=>`
+                                                        <span class="product-detail-chip">
+                                                            ${escapeHTML(detail)}
+                                                        </span>
+                                                    `).join("")}
+                                                </div>
+                                            `
+                                            : ""
+                                        }
 
 
                                         <div class="product-price">
 
                                             ₹${price.toFixed(2)}
+                                            ×
+                                            ${quantity}
+
+                                        </div>
+
+
+                                        <div class="product-line-total">
+
+                                            Item total:
+                                            ₹${lineTotal.toFixed(2)}
+
+                                        </div>
+
+
+                                        <div class="product-source">
+
+                                            ${escapeHTML(tableName)}
+                                            · ID ${escapeHTML(productId)}
 
                                         </div>
 
@@ -4960,6 +5044,7 @@ function renderProducts(){
                     product.dish_name ||
                     product.restaurant_item_name ||
                     product.cake_name ||
+                    product.name ||
                     product.title ||
                     `Product ${product.id}`;
 
