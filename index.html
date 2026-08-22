@@ -583,7 +583,8 @@ const PRODUCT_TABLES = [
     "fresh_products",
     "icecreams",
     "food_items",
-    "cakes"
+    "cakes",
+    "cezoocafe"
 ];
 
 
@@ -607,6 +608,20 @@ const ORDER_TABLES = [
 
 
 let currentVendor = null;
+
+/*
+  Product assignment in the CEZOO admin dashboard uses public.vendors(id),
+  while vendor login uses public.vendor_login(id).
+
+  These IDs are not guaranteed to be the same.
+
+  productVendorId is the matching public.vendors.id resolved by the
+  logged-in vendor's mobile number. Product loading/order routing must
+  use this ID, while login/profile/FCM/delivery history continue using
+  currentVendor.id from vendor_login.
+*/
+let productVendorId = null;
+
 let vendorProducts = [];
 let vendorOrders = [];
 let channels = [];
@@ -614,6 +629,126 @@ let productChannels = [];
 let analyticsOrders = [];
 let analyticsRefreshPromise = null;
 
+
+
+/* ===========================
+   PRODUCT VENDOR ID BRIDGE
+=========================== */
+
+function cleanVendorMobile(value){
+    return String(value ?? "")
+        .replace(/\D/g,"")
+        .slice(-10);
+}
+
+async function resolveProductVendorId(){
+
+    productVendorId = null;
+
+    if(!currentVendor){
+        return null;
+    }
+
+    const phone =
+        cleanVendorMobile(
+            currentVendor.mobile
+        );
+
+    if(phone.length !== 10){
+
+        /*
+          Legacy fallback:
+          older installations may have product.vendor_id directly
+          pointing to vendor_login.id.
+        */
+        productVendorId =
+            currentVendor.id;
+
+        return productVendorId;
+    }
+
+    try{
+
+        const {
+            data,
+            error
+        } =
+        await sb
+            .from("vendors")
+            .select("id,vendor_name,mobile,status")
+            .eq("mobile",phone)
+            .maybeSingle();
+
+        if(error){
+            console.warn(
+                "Product vendor ID lookup failed:",
+                error
+            );
+        }
+
+        if(
+            data &&
+            data.id !== null &&
+            data.id !== undefined
+        ){
+
+            productVendorId =
+                data.id;
+
+            currentVendor.product_vendor_id =
+                data.id;
+
+            currentVendor.product_vendor_name =
+                data.vendor_name ||
+                currentVendor.vendor_name ||
+                "";
+
+            console.log(
+                "CEZOO vendor bridge:",
+                {
+                    vendor_login_id:
+                        currentVendor.id,
+                    product_vendor_id:
+                        productVendorId,
+                    mobile:
+                        phone
+                }
+            );
+
+            return productVendorId;
+        }
+
+    }catch(error){
+
+        console.warn(
+            "Product vendor ID lookup failed:",
+            error
+        );
+
+    }
+
+
+    /*
+      Safe backwards-compatible fallback.
+      This keeps an old vendor working when their product FK
+      still points directly to vendor_login(id).
+    */
+    productVendorId =
+        currentVendor.id;
+
+    return productVendorId;
+}
+
+function getProductVendorId(){
+
+    return (
+        productVendorId ??
+        currentVendor?.product_vendor_id ??
+        currentVendor?.id ??
+        null
+    );
+
+}
 
 
 /* ===========================
@@ -702,7 +837,13 @@ async function loadAnalyticsOrders(){
                     const directVendor =
                         row.vendor_id !== null &&
                         row.vendor_id !== undefined &&
-                        String(row.vendor_id) === String(currentVendor.id);
+                        (
+                            String(row.vendor_id) ===
+                                String(currentVendor.id)
+                            ||
+                            String(row.vendor_id) ===
+                                String(getProductVendorId())
+                        );
 
                     let productBelongsToVendor = false;
                     if(!directVendor){
@@ -1963,6 +2104,15 @@ async event => {
             data;
 
 
+        /*
+          IMPORTANT:
+          Login row ID (vendor_login.id) and product assignment ID
+          (vendors.id) may be different. Resolve the matching product
+          vendor ID by mobile before loading any products/orders.
+        */
+        await resolveProductVendorId();
+
+
         localStorage.setItem(
             "cezoo_vendor_id",
             String(data.id)
@@ -2019,6 +2169,17 @@ async event => {
 async function openVendorApp(
     vendor
 ){
+
+    /*
+      Always resolve the product-assignment vendor ID here too.
+      This also covers restored sessions / app relaunch.
+    */
+    if(
+        !productVendorId
+    ){
+        await resolveProductVendorId();
+    }
+
 
     /*
       Final token-save retry. This handles the case where
@@ -2334,7 +2495,7 @@ async function loadVendorProducts(){
         .select("*")
         .eq(
             "vendor_id",
-            currentVendor.id
+            getProductVendorId()
         );
 
 
@@ -2748,7 +2909,7 @@ async function startProductRealtime(){
                         event:"INSERT",
                         schema:"public",
                         table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
+                        filter:`vendor_id=eq.${getProductVendorId()}`
                     },
                     payload => {
 
@@ -2806,7 +2967,7 @@ async function startProductRealtime(){
                         event:"UPDATE",
                         schema:"public",
                         table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
+                        filter:`vendor_id=eq.${getProductVendorId()}`
                     },
                     payload => {
 
@@ -2857,7 +3018,7 @@ async function startProductRealtime(){
                         event:"DELETE",
                         schema:"public",
                         table:table,
-                        filter:`vendor_id=eq.${currentVendor.id}`
+                        filter:`vendor_id=eq.${getProductVendorId()}`
                     },
                     payload => {
 
@@ -4386,7 +4547,7 @@ async function(
         )
         .eq(
             "vendor_id",
-            currentVendor.id
+            getProductVendorId()
         )
         .select("*")
         .maybeSingle();
@@ -4602,7 +4763,7 @@ async function(
         )
         .eq(
             "vendor_id",
-            currentVendor.id
+            getProductVendorId()
         );
 
 
