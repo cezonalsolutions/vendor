@@ -705,7 +705,8 @@ button,input{font:inherit} button{cursor:pointer}
     margin-top:4px;
     color:#747980;
     font-size:10px;
-    font-weight:650;
+    font-weight:700;
+    line-height:1.35;
 }
 
 .vendor-order-qty{
@@ -2596,6 +2597,85 @@ function getVendorProductPackText(product){
             product.sub_txt ||
             ""
         ).trim();
+    }
+
+    /*
+     * IMPORTANT:
+     * cezoogroceries / fresh_products must show the PRODUCT'S
+     * pack quantity + unit, not the order/cart quantity.
+     *
+     * Examples:
+     *   1 + kg   -> 1 kg
+     *   500 + g  -> 500 g
+     *   1 + pcs  -> 1 pcs
+     *
+     * Read the exact product row first because order-item `qty`
+     * means "how many packs customer ordered".
+     */
+    const productTable =
+        normalizeTable(
+            product.product_table ||
+            product.source_table ||
+            ""
+        );
+
+    if(
+        productTable === "cezoogroceries" ||
+        productTable === "fresh_products"
+    ){
+
+        const groceryQuantity =
+            product.product_quantity ??
+            product.net_quantity ??
+            product.net_weight ??
+            product.weight ??
+            product.quantity_value ??
+            product.qty_value ??
+            product.pack_quantity ??
+            product.quantity ??
+            "";
+
+        const groceryUnit =
+            product.product_unit ??
+            product.weight_unit ??
+            product.measurement_unit ??
+            product.quantity_unit ??
+            product.pack_unit ??
+            product.unit ??
+            product.units ??
+            product.uom ??
+            "";
+
+        const groceryQuantityText =
+            String(
+                groceryQuantity ?? ""
+            ).trim();
+
+        const groceryUnitText =
+            String(
+                groceryUnit ?? ""
+            ).trim();
+
+        if(
+            groceryQuantityText &&
+            groceryUnitText
+        ){
+            return (
+                groceryQuantityText +
+                " " +
+                groceryUnitText
+            )
+            .replace(/\s+/g," ")
+            .trim();
+        }
+
+        if(groceryQuantityText){
+            return groceryQuantityText;
+        }
+
+        if(groceryUnitText){
+            return groceryUnitText;
+        }
     }
 
     const descriptiveQuantity =
@@ -5276,13 +5356,40 @@ function renderOrders(){
                                     : "";
 
                             if(!packText){
-                                packText =
-                                    getVendorProductPackText(
+
+                                const orderProductTable =
+                                    getProductTable(
                                         item
-                                    ) ||
-                                    getVendorProductPackText(
-                                        product
                                     );
+
+                                if(
+                                    orderProductTable ===
+                                        "cezoogroceries"
+                                    ||
+                                    orderProductTable ===
+                                        "fresh_products"
+                                ){
+                                    /*
+                                     * Grocery/Fresh:
+                                     * product row owns pack quantity + unit.
+                                     * Order item owns ordered quantity.
+                                     */
+                                    packText =
+                                        getVendorProductPackText(
+                                            product
+                                        ) ||
+                                        getVendorProductPackText(
+                                            item
+                                        );
+                                }else{
+                                    packText =
+                                        getVendorProductPackText(
+                                            item
+                                        ) ||
+                                        getVendorProductPackText(
+                                            product
+                                        );
+                                }
                             }
 
                             const lineTotal =
