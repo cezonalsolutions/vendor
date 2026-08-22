@@ -539,6 +539,203 @@ button,input{font:inherit} button{cursor:pointer}
 .analytics-cancel{color:#c74747}
 @media(max-width:430px){.analytics-card-value{font-size:20px}}
 
+
+/* =========================================================
+   CLEAN VENDOR UI OVERRIDES
+========================================================= */
+
+.order-card{
+    background:#fff;
+    border:1px solid #ececef;
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 7px 22px rgba(20,22,26,.05);
+}
+
+.order-top{
+    margin-top:0;
+    padding:0 0 12px;
+    border-bottom:1px solid #eeeeef;
+}
+
+.order-id{
+    font-size:15px;
+    font-weight:800;
+}
+
+.order-time{
+    font-size:9px;
+}
+
+.payment-chip{
+    background:#f4f5f6;
+    font-size:10px;
+}
+
+.items-head,
+.product-source,
+.product-row-details,
+.product-detail-list,
+.product-price,
+.qty-box{
+    display:none !important;
+}
+
+.items-wrap{
+    padding:4px 0;
+}
+
+.order-item{
+    display:grid;
+    grid-template-columns:58px minmax(0,1fr);
+    gap:11px;
+    align-items:center;
+    min-height:76px;
+    padding:10px 0;
+    border-bottom:1px solid #eeeeef;
+}
+
+.order-item:last-child{
+    border-bottom:0;
+}
+
+.order-image{
+    width:58px;
+    height:58px;
+    border-radius:12px;
+    background:#f5f5f6;
+}
+
+.order-image img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.order-product{
+    min-width:0;
+}
+
+.product-title{
+    font-size:13px;
+    line-height:1.35;
+    font-weight:800;
+    color:#1f2024;
+}
+
+.order-simple-meta{
+    margin-top:5px;
+    color:#70747b;
+    font-size:10px;
+    font-weight:650;
+}
+
+.order-simple-total{
+    margin-top:5px;
+    color:#202126;
+    font-size:12px;
+    font-weight:800;
+}
+
+.customer-strip{
+    margin-top:7px;
+    padding:12px 0;
+    border-top:1px solid #eeeeef;
+    border-bottom:0;
+}
+
+.customer-name{
+    font-size:13px;
+}
+
+.customer-meta{
+    font-size:9px;
+}
+
+.distance-badge{
+    min-height:25px;
+    font-size:9px;
+}
+
+.order-summary{
+    padding:12px 0 0;
+    border-top:1px solid #eeeeef;
+}
+
+.summary-label{
+    font-size:8px;
+}
+
+.summary-value{
+    font-size:18px;
+}
+
+.pack-btn{
+    height:46px;
+    border-radius:12px;
+}
+
+.products-list{
+    gap:9px;
+}
+
+.product-card{
+    grid-template-columns:58px minmax(0,1fr) auto;
+    gap:10px;
+    padding:11px;
+    border-radius:14px;
+}
+
+.product-image{
+    width:58px;
+    height:58px;
+}
+
+.product-name{
+    font-size:12px;
+}
+
+.product-telugu{
+    font-size:9px;
+}
+
+.product-table-name{
+    display:none;
+}
+
+.product-meta-chip{
+    min-height:24px;
+    font-size:8px;
+}
+
+.stock-text{
+    font-size:7px;
+}
+
+.stock-area.no-control{
+    opacity:.55;
+}
+
+@media(max-width:420px){
+    .order-item{
+        grid-template-columns:54px minmax(0,1fr);
+    }
+
+    .order-image{
+        width:54px;
+        height:54px;
+    }
+
+    .product-card{
+        grid-template-columns:54px minmax(0,1fr) auto;
+    }
+
+    .product-image{
+        width:54px;
+        height:54px;
+    }
+}
+
 </style>
 </head>
 
@@ -2105,6 +2302,234 @@ function getEditableUnitKey(
 }
 
 
+
+function getProductAvailabilityKey(
+    product
+){
+    return firstExistingKey(
+        product,
+        [
+            "stock",
+            "in_stock",
+            "is_available",
+            "available",
+            "is_open"
+        ]
+    );
+}
+
+
+function getProductAvailabilityValue(
+    product
+){
+    const key =
+        getProductAvailabilityKey(
+            product
+        );
+
+    if(!key){
+        return true;
+    }
+
+    const raw =
+        product[key];
+
+    if(typeof raw === "boolean"){
+        return raw;
+    }
+
+    if(typeof raw === "number"){
+        return raw !== 0;
+    }
+
+    const value =
+        String(
+            raw ?? ""
+        )
+        .trim()
+        .toLowerCase();
+
+    if(
+        value === "false" ||
+        value === "0" ||
+        value === "no" ||
+        value === "out" ||
+        value === "out_of_stock" ||
+        value === "closed" ||
+        value === "unavailable"
+    ){
+        return false;
+    }
+
+    return true;
+}
+
+
+function getProductAvailabilityDbValue(
+    product,
+    checked
+){
+    const key =
+        getProductAvailabilityKey(
+            product
+        );
+
+    if(!key){
+        return null;
+    }
+
+    const oldValue =
+        product[key];
+
+    if(typeof oldValue === "boolean"){
+        return checked;
+    }
+
+    if(typeof oldValue === "number"){
+        return checked ? 1 : 0;
+    }
+
+    const normalized =
+        String(
+            oldValue ?? ""
+        )
+        .trim()
+        .toLowerCase();
+
+    if(
+        key === "is_open" ||
+        normalized === "open" ||
+        normalized === "closed"
+    ){
+        return checked
+            ? "open"
+            : "closed";
+    }
+
+    if(
+        normalized === "yes" ||
+        normalized === "no"
+    ){
+        return checked
+            ? "yes"
+            : "no";
+    }
+
+    if(
+        normalized === "in_stock" ||
+        normalized === "out_of_stock"
+    ){
+        return checked
+            ? "in_stock"
+            : "out_of_stock";
+    }
+
+    return checked;
+}
+
+
+function getVendorStoreStatusKey(
+    vendor
+){
+    return firstExistingKey(
+        vendor,
+        [
+            "store_status",
+            "is_open",
+            "is_available",
+            "status"
+        ]
+    );
+}
+
+
+function vendorStoreIsOpen(
+    vendor
+){
+    const key =
+        getVendorStoreStatusKey(
+            vendor
+        );
+
+    if(!key){
+        return true;
+    }
+
+    const raw =
+        vendor[key];
+
+    if(typeof raw === "boolean"){
+        return raw;
+    }
+
+    if(typeof raw === "number"){
+        return raw !== 0;
+    }
+
+    const value =
+        String(
+            raw ?? ""
+        )
+        .trim()
+        .toLowerCase();
+
+    return !(
+        value === "closed" ||
+        value === "false" ||
+        value === "0" ||
+        value === "no" ||
+        value === "inactive" ||
+        value === "unavailable"
+    );
+}
+
+
+function vendorStoreDbValue(
+    vendor,
+    open
+){
+    const key =
+        getVendorStoreStatusKey(
+            vendor
+        );
+
+    if(!key){
+        return null;
+    }
+
+    const oldValue =
+        vendor[key];
+
+    if(typeof oldValue === "boolean"){
+        return open;
+    }
+
+    if(typeof oldValue === "number"){
+        return open ? 1 : 0;
+    }
+
+    if(key === "status"){
+        const old =
+            String(
+                oldValue ?? ""
+            ).toLowerCase();
+
+        if(
+            old === "active" ||
+            old === "inactive"
+        ){
+            return open
+                ? "active"
+                : "inactive";
+        }
+    }
+
+    return open
+        ? "open"
+        : "closed";
+}
+
+
 function productDomKey(
     table,
     id
@@ -2951,12 +3376,9 @@ function setProfile(
 
 
     const open =
-        String(
-            vendor.store_status ||
-            ""
-        )
-        .toLowerCase() ===
-        "open";
+        vendorStoreIsOpen(
+            vendor
+        );
 
 
     storeStatusSwitch.checked =
@@ -2977,93 +3399,173 @@ storeStatusSwitch.addEventListener(
 "change",
 async () => {
 
-    if(
-        !currentVendor
-    ){
+    if(!currentVendor){
         return;
     }
-
 
     const open =
         storeStatusSwitch.checked;
 
-
     storeStatusSwitch.disabled =
         true;
 
-
     try{
 
+        const loginKey =
+            getVendorStoreStatusKey(
+                currentVendor
+            );
 
-        const {
-            error
-        } =
-        await sb
-        .from(
-            "vendor_login"
-        )
-        .update({
+        /*
+         * vendor_login rows are not assumed to share one fixed
+         * availability column. Update only a column that actually
+         * exists on this exact login row.
+         */
+        if(loginKey){
 
-            store_status:
-                open
-                ? "open"
-                : "closed"
+            const loginValue =
+                vendorStoreDbValue(
+                    currentVendor,
+                    open
+                );
 
-        })
-        .eq(
-            "id",
-            currentVendor.id
-        );
+            const {
+                data:updatedLogin,
+                error:loginError
+            } =
+                await sb
+                    .from("vendor_login")
+                    .update({
+                        [loginKey]:
+                            loginValue
+                    })
+                    .eq(
+                        "id",
+                        currentVendor.id
+                    )
+                    .select("*")
+                    .maybeSingle();
 
+            if(loginError){
+                throw loginError;
+            }
 
-        if(error){
-            throw error;
+            if(updatedLogin){
+                currentVendor =
+                    updatedLogin;
+            }else{
+                currentVendor[loginKey] =
+                    loginValue;
+            }
         }
 
+        /*
+         * Keep the matching public.vendors row in sync when it has
+         * its own availability/status column. This is best-effort:
+         * failure here must not undo a successful vendor_login update.
+         */
+        try{
 
-        currentVendor.store_status =
-            open
-            ? "open"
-            : "closed";
+            const {
+                data:productVendorRow,
+                error:vendorReadError
+            } =
+                await sb
+                    .from("vendors")
+                    .select("*")
+                    .eq(
+                        "id",
+                        getProductVendorId()
+                    )
+                    .maybeSingle();
 
+            if(!vendorReadError && productVendorRow){
+
+                const productVendorKey =
+                    getVendorStoreStatusKey(
+                        productVendorRow
+                    );
+
+                if(productVendorKey){
+
+                    const productVendorValue =
+                        vendorStoreDbValue(
+                            productVendorRow,
+                            open
+                        );
+
+                    const {
+                        error:vendorWriteError
+                    } =
+                        await sb
+                            .from("vendors")
+                            .update({
+                                [productVendorKey]:
+                                    productVendorValue
+                            })
+                            .eq(
+                                "id",
+                                getProductVendorId()
+                            );
+
+                    if(vendorWriteError){
+                        console.warn(
+                            "vendors status sync warning:",
+                            vendorWriteError
+                        );
+                    }
+                }
+            }
+
+        }catch(syncError){
+
+            console.warn(
+                "vendors status sync warning:",
+                syncError
+            );
+        }
 
         document.getElementById(
             "storeStatusText"
         ).textContent =
             open
-            ? "Open"
-            : "Closed";
-
+                ? "Open"
+                : "Closed";
 
         toast(
             open
-            ? "Store opened"
-            : "Store closed"
+                ? "Store opened"
+                : "Store closed"
         );
-
 
     }catch(error){
 
+        console.error(
+            "Store status update error:",
+            error
+        );
 
         storeStatusSwitch.checked =
             !open;
 
+        document.getElementById(
+            "storeStatusText"
+        ).textContent =
+            !open
+                ? "Open"
+                : "Closed";
 
         toast(
+            error?.message ||
             "Store update failed",
             true
         );
 
-
     }finally{
-
 
         storeStatusSwitch.disabled =
             false;
-
-
     }
-
 });
 
 
@@ -4050,67 +4552,42 @@ function updateCounts(){
 =========================== */
 
 function renderOrders(){
+
     renderAnalytics();
-
     updateCounts();
-
 
     const order =
         getCurrentOrder();
 
-
-    if(
-        !order
-    ){
+    if(!order){
 
         ordersDisplay.innerHTML = `
             <div class="empty-orders">
-
                 <div class="empty-icon">
                     <i class="fa-solid fa-receipt"></i>
                 </div>
-
-                <h2>
-                    No orders waiting
-                </h2>
-
-                <p>
-                    New live orders will appear automatically.
-                </p>
-
+                <h2>No orders waiting</h2>
+                <p>New orders will appear automatically.</p>
             </div>
         `;
 
-
         return;
-
     }
-
 
     const items =
         order._vendorItems ||
         [];
 
-
     const total =
         items.reduce(
-            (
-                sum,
-                item
-            ) => {
-
-                return (
-                    sum +
-                    getOrderLineTotal(
-                        item,
-                        item._product
-                    )
-                );
-
-            },
+            (sum,item) =>
+                sum +
+                getOrderLineTotal(
+                    item,
+                    item._product
+                ),
             0
         );
-
 
     ordersDisplay.innerHTML = `
 
@@ -4122,51 +4599,28 @@ function renderOrders(){
             <div class="order-top">
 
                 <div>
-
                     <div class="order-id">
-
                         Order #${escapeHTML(
                             getOrderId(order)
                         )}
-
                     </div>
 
                     <div class="order-time">
-
                         ${escapeHTML(
                             formatDate(
                                 order.created_at
                             )
                         )}
-
                     </div>
-
                 </div>
 
-
                 <div class="payment-chip">
-
                     ${escapeHTML(
                         order._payment
                     )}
-
                 </div>
 
             </div>
-
-
-            <div class="items-head">
-
-                <strong>
-                    Total Items
-                </strong>
-
-                <div class="items-count">
-                    ${items.reduce((sum, item) => sum + getQuantity(item), 0)}
-                </div>
-
-            </div>
-
 
             <div class="items-wrap">
 
@@ -4175,10 +4629,8 @@ function renderOrders(){
                     .map(
                         item => {
 
-
                             const product =
                                 item._product;
-
 
                             const image =
                                 getImage(
@@ -4186,17 +4638,10 @@ function renderOrders(){
                                     product
                                 );
 
-
                             const quantity =
-                                getQuantity(item);
-
-
-                            const price =
-                                getOrderUnitPrice(
-                                    item,
-                                    product
+                                getQuantity(
+                                    item
                                 );
-
 
                             const lineTotal =
                                 getOrderLineTotal(
@@ -4204,23 +4649,32 @@ function renderOrders(){
                                     product
                                 );
 
-
-                            const details =
+                            const packValues =
                                 getOrderItemPackDetails(
                                     item,
                                     product
                                 );
 
+                            /*
+                             * Keep only the useful quantity/unit text.
+                             * No table name, no database row dump,
+                             * no side labels, no duplicate price blocks.
+                             */
+                            const unitText =
+                                packValues
+                                .filter(value=>{
+                                    const clean =
+                                        String(value ?? "")
+                                        .trim();
 
-                            const tableName =
-                                getProductTable(item);
-
-
-                            const fullRowDetails =
-                                renderProductRowDetails(
-                                    product
-                                );
-
+                                    return (
+                                        clean &&
+                                        clean !==
+                                            String(quantity)
+                                    );
+                                })
+                                .slice(0,2)
+                                .join(" ");
 
                             return `
 
@@ -4230,14 +4684,12 @@ function renderOrders(){
 
                                         ${
                                             image
-
                                             ? `
                                                 <img
                                                     src="${escapeHTML(image)}"
                                                     alt=""
                                                 >
                                             `
-
                                             : `
                                                 <i class="fa-solid fa-box"></i>
                                             `
@@ -4245,75 +4697,34 @@ function renderOrders(){
 
                                     </div>
 
-
                                     <div class="order-product">
 
                                         <div class="product-title">
-
                                             ${escapeHTML(
                                                 getProductName(
                                                     item,
                                                     product
                                                 )
                                             )}
-
                                         </div>
 
-
-                                        ${
-                                            details.length
-                                            ? `
-                                                <div class="product-detail-list">
-                                                    ${details.map(detail=>`
-                                                        <span class="product-detail-chip">
-                                                            ${escapeHTML(detail)}
-                                                        </span>
-                                                    `).join("")}
-                                                </div>
-                                            `
-                                            : ""
-                                        }
-
-
-                                        <div class="product-price">
-
-                                            ₹${price.toFixed(2)}
-                                            ×
-                                            ${quantity}
-
+                                        <div class="order-simple-meta">
+                                            Qty ${escapeHTML(quantity)}
+                                            ${
+                                                unitText
+                                                    ? ` • ${escapeHTML(unitText)}`
+                                                    : ""
+                                            }
                                         </div>
 
-
-                                        <div class="product-line-total">
-
-                                            Item total:
+                                        <div class="order-simple-total">
                                             ₹${lineTotal.toFixed(2)}
-
                                         </div>
-
-
-                                        <div class="product-source">
-
-                                            ${escapeHTML(tableName)}
-
-                                        </div>
-
-
-                                        ${fullRowDetails}
-
-                                    </div>
-
-
-                                    <div class="qty-box">
-
-                                        ×${quantity}
 
                                     </div>
 
                                 </div>
-
                             `;
-
                         }
                     )
                     .join("")
@@ -4321,84 +4732,70 @@ function renderOrders(){
 
             </div>
 
-
-
             <div class="customer-strip">
 
                 <div class="customer-name">
-
                     ${escapeHTML(
                         getCustomerName(order)
                     )}
-
                 </div>
-
 
                 <div class="customer-meta">
 
                     ${
                         getCustomerMobile(order)
-
                         ? `
                             <span>
                                 <i class="fa-solid fa-phone"></i>
-
                                 ${escapeHTML(
                                     getCustomerMobile(order)
                                 )}
                             </span>
                         `
-
                         : ""
                     }
 
-
                     ${
                         getCustomerAddress(order)
-
                         ? `
                             <span>
                                 <i class="fa-solid fa-location-dot"></i>
-
                                 ${escapeHTML(
                                     getCustomerAddress(order)
                                 )}
                             </span>
                         `
-
                         : ""
                     }
 
                 </div>
 
-
-                <div class="distance-badge">
-
-                    <i class="fa-solid fa-route"></i>
-
-                    ${escapeHTML(
-                        getDistance(order)
-                    )}
-
-                </div>
+                ${
+                    getDistance(order)
+                    ? `
+                        <div class="distance-badge">
+                            <i class="fa-solid fa-route"></i>
+                            ${escapeHTML(
+                                getDistance(order)
+                            )}
+                        </div>
+                    `
+                    : ""
+                }
 
             </div>
-
 
             <div class="order-summary">
 
                 <div>
-
                     <div class="summary-label">
-                        YOUR ITEMS TOTAL
+                        TOTAL
                     </div>
 
                     <div class="summary-value">
                         ₹${total.toFixed(2)}
                     </div>
-
                 </div>
-
 
                 <button
                     class="pack-btn"
@@ -4422,27 +4819,20 @@ function renderOrders(){
 
         <div class="order-swipe-hint">
             <i class="fa-solid fa-arrow-left"></i>
-            Swipe both sides
+            Swipe orders
             <i class="fa-solid fa-arrow-right"></i>
         </div>
 
         </div>
         </div>
-
     `;
 
     updateOrderPager();
 
-    /*
-      Bind gestures to the newly rendered order card.
-      requestAnimationFrame avoids layout jank on low-end Android devices.
-    */
     requestAnimationFrame(
         attachOrderSwipe
     );
-
 }
-
 
 let orderSwipeStartX = 0;
 let orderSwipeStartY = 0;
@@ -5384,15 +5774,14 @@ function renderProducts(){
                     );
 
 
+                const stockKey =
+                    getProductAvailabilityKey(
+                        product
+                    );
+
                 const stock =
-                    !(
-                        product.stock === false
-                        ||
-                        product.stock === 0
-                        ||
-                        String(product.stock).toLowerCase() === "false"
-                        ||
-                        String(product.stock).toLowerCase() === "no"
+                    getProductAvailabilityValue(
+                        product
                     );
 
 
@@ -5588,12 +5977,12 @@ function renderProducts(){
                         </div>
 
 
-                        <div class="stock-area">
+                        <div class="stock-area ${stockKey ? "" : "no-control"}">
 
                             <span
                                 class="stock-text ${stock ? "on" : "off"}"
                             >
-                                ${stock ? "IN STOCK" : "OUT"}
+                                ${stockKey ? (stock ? "IN STOCK" : "OUT") : "NO STOCK FIELD"}
                             </span>
 
 
@@ -5602,6 +5991,7 @@ function renderProducts(){
                                 <input
                                     type="checkbox"
                                     ${stock ? "checked" : ""}
+                                    ${stockKey ? "" : "disabled"}
                                     onchange="changeStock(
                                         '${product.product_table}',
                                         '${product.id}',
@@ -5887,22 +6277,17 @@ async function(
         }
 
 
-        if(data){
+        if(!data){
 
-            Object.assign(
-                product,
-                data
+            throw new Error(
+                "Product row was not updated. Check vendor assignment."
             );
-
         }
-        else{
 
-            Object.assign(
-                product,
-                updates
-            );
-
-        }
+        Object.assign(
+            product,
+            data
+        );
 
 
         const freshPriceKey =
@@ -6065,93 +6450,136 @@ async function(
     checkbox
 ){
 
-    const value =
+    const product =
+        vendorProducts.find(
+            item =>
+                item.product_table === table
+                &&
+                String(item.id) ===
+                    String(id)
+        );
+
+    if(!product){
+
+        checkbox.checked =
+            !checkbox.checked;
+
+        toast(
+            "Product not found",
+            true
+        );
+
+        return;
+    }
+
+    const stockKey =
+        getProductAvailabilityKey(
+            product
+        );
+
+    if(!stockKey){
+
+        checkbox.checked =
+            !checkbox.checked;
+
+        toast(
+            "This product has no stock/availability column",
+            true
+        );
+
+        return;
+    }
+
+    const checked =
         checkbox.checked;
 
+    const dbValue =
+        getProductAvailabilityDbValue(
+            product,
+            checked
+        );
 
     checkbox.disabled =
         true;
 
-
     try{
 
-
+        /*
+         * Update ONLY the real availability column that exists
+         * on this exact product row. Different tables can use:
+         * stock / in_stock / is_available / available / is_open.
+         */
         const {
+            data,
             error
         } =
-        await sb
-        .from(table)
-        .update({
-
-            stock:value
-
-        })
-        .eq(
-            "id",
-            id
-        )
-        .eq(
-            "vendor_id",
-            getProductVendorId()
-        );
-
+            await sb
+                .from(table)
+                .update({
+                    [stockKey]:
+                        dbValue
+                })
+                .eq(
+                    "id",
+                    id
+                )
+                .eq(
+                    "vendor_id",
+                    getProductVendorId()
+                )
+                .select("*")
+                .maybeSingle();
 
         if(error){
             throw error;
         }
 
+        if(!data){
 
-        const product =
-            vendorProducts.find(
-                item =>
-
-                    item.product_table ===
-                    table
-
-                    &&
-
-                    String(item.id) ===
-                    String(id)
+            throw new Error(
+                "Product row was not updated"
             );
-
-
-        if(product){
-            product.stock = value;
         }
 
+        Object.assign(
+            product,
+            data
+        );
 
         renderProducts();
 
-
         toast(
-            value
-            ? "Product available"
-            : "Product unavailable"
+            checked
+                ? "Product available"
+                : "Product unavailable"
         );
-
 
     }catch(error){
 
+        console.error(
+            "Stock update error:",
+            {
+                table,
+                id,
+                stockKey,
+                error
+            }
+        );
 
         checkbox.checked =
-            !value;
-
+            !checked;
 
         toast(
+            error?.message ||
             "Stock update failed",
             true
         );
 
-
     }finally{
-
 
         checkbox.disabled =
             false;
-
-
     }
-
 };
 
 
