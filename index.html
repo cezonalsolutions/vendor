@@ -748,6 +748,22 @@ button,input{font:inherit} button{cursor:pointer}
     }
 }
 
+
+.vendor-order-cake-name{
+    margin-top:5px;
+    padding:6px 8px;
+    border-radius:8px;
+    background:#fff4f9;
+    color:#b62867;
+    font-size:9px;
+    font-weight:750;
+    line-height:1.35;
+}
+
+.vendor-order-cake-name strong{
+    font-weight:900;
+}
+
 </style>
 </head>
 
@@ -2445,6 +2461,85 @@ function getVendorProductImage(product){
 }
 
 
+
+function getCakeCustomerNameText(item){
+
+    if(!item){
+        return "null";
+    }
+
+    const direct =
+        String(
+            item.cake_name_text ??
+            item.cake_name ??
+            ""
+        ).trim();
+
+    if(direct){
+        return direct;
+    }
+
+    if(
+        Array.isArray(
+            item.cake_names
+        )
+    ){
+        const names =
+            item.cake_names
+                .map(
+                    value =>
+                        String(
+                            value ?? ""
+                        ).trim()
+                )
+                .filter(Boolean);
+
+        if(names.length){
+            return names.join(" | ");
+        }
+    }
+
+    /*
+     * Some order records may keep cake_names as JSON text.
+     */
+    if(
+        typeof item.cake_names ===
+        "string"
+    ){
+        const raw =
+            item.cake_names.trim();
+
+        if(raw){
+            try{
+                const parsed =
+                    JSON.parse(raw);
+
+                if(Array.isArray(parsed)){
+                    const names =
+                        parsed
+                            .map(
+                                value =>
+                                    String(
+                                        value ?? ""
+                                    ).trim()
+                            )
+                            .filter(Boolean);
+
+                    if(names.length){
+                        return names.join(" | ");
+                    }
+                }
+            }catch(error){
+
+                return raw;
+            }
+        }
+    }
+
+    return "null";
+}
+
+
 function getVendorProductPackText(product){
 
     if(!product){
@@ -2861,7 +2956,7 @@ function renderCakeVariantEditor(product){
 
     return `
         <div class="vendor-cake-badge">
-            CAKE VARIANTS
+            CAKE PRICE VARIANTS
         </div>
 
         <div class="cake-variant-list">
@@ -5161,10 +5256,11 @@ function renderOrders(){
                             */
                             let packText = "";
 
-                            if(
+                            const isCakeOrder =
                                 getProductTable(item) ===
-                                "cakes"
-                            ){
+                                "cakes";
+
+                            if(isCakeOrder){
                                 packText =
                                     [
                                         item.cake_type,
@@ -5173,6 +5269,11 @@ function renderOrders(){
                                     .filter(Boolean)
                                     .join(" • ");
                             }
+
+                            const cakeCustomerName =
+                                isCakeOrder
+                                    ? getCakeCustomerNameText(item)
+                                    : "";
 
                             if(!packText){
                                 packText =
@@ -5220,6 +5321,17 @@ function renderOrders(){
                                             ? `
                                                 <div class="vendor-order-pack">
                                                     ${escapeHTML(packText)}
+                                                </div>
+                                            `
+                                            : ""
+                                        }
+
+                                        ${
+                                            isCakeOrder
+                                            ? `
+                                                <div class="vendor-order-cake-name">
+                                                    <strong>Cake Name:</strong>
+                                                    ${escapeHTML(cakeCustomerName)}
                                                 </div>
                                             `
                                             : ""
@@ -6385,6 +6497,9 @@ function renderProducts(){
                             </div>
 
 
+                            ${
+                                !isCake
+                                ? `
                             <div class="product-meta">
 
                                 <div class="product-meta-chip">
@@ -6452,6 +6567,14 @@ function renderProducts(){
                             </div>
 
 
+
+                                `
+                                : ""
+                            }
+
+                            ${
+                                !isCake
+                                ? `
                             <div
                                 class="product-edit-form"
                                 id="editForm_${domKey}"
@@ -6516,6 +6639,10 @@ function renderProducts(){
 
                             </div>
 
+
+                                `
+                                : ""
+                            }
                         </div>
 
 
