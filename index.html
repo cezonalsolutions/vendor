@@ -541,120 +541,18 @@ button,input{font:inherit} button{cursor:pointer}
 
 
 /* =========================================================
-   CEZOO VENDOR - CUSTOMER STYLE PRODUCT/ORDER UI
+   CEZOO VENDOR - EXACT PRODUCT ROW / CAKE JSON UI
 ========================================================= */
 
-.order-card{
-    background:#fff;
-    border:1px solid #e9eaed;
-    border-radius:18px;
-    padding:14px;
-    box-shadow:0 6px 22px rgba(20,22,26,.05);
-}
-
-.order-top{
-    margin-top:0;
-    padding:0 0 12px;
-    border-bottom:1px solid #ededf0;
-}
-
-.order-id{font-size:15px}
-.order-time{font-size:9px}
-.payment-chip{font-size:10px;background:#f4f5f6}
-
-.items-head,
-.product-source,
+.product-table-name,
 .product-row-details,
 .product-detail-list,
-.product-price,
+.items-head,
+.product-source,
 .qty-box{
     display:none !important;
 }
 
-.items-wrap{
-    padding:4px 0;
-}
-
-.order-item{
-    display:grid;
-    grid-template-columns:64px minmax(0,1fr) auto;
-    gap:11px;
-    align-items:center;
-    padding:12px 0;
-    border-bottom:1px solid #ededf0;
-}
-
-.order-item:last-child{
-    border-bottom:0;
-}
-
-.order-image{
-    width:64px;
-    height:64px;
-    border-radius:13px;
-    background:#f5f5f6;
-}
-
-.order-image img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-}
-
-.product-title{
-    font-size:13px;
-    line-height:1.35;
-    font-weight:800;
-}
-
-.vendor-order-pack{
-    margin-top:4px;
-    color:#777c83;
-    font-size:10px;
-    line-height:1.35;
-    font-weight:600;
-}
-
-.vendor-order-qty{
-    margin-top:5px;
-    color:#555b63;
-    font-size:10px;
-    font-weight:700;
-}
-
-.vendor-order-line-total{
-    min-width:66px;
-    text-align:right;
-    font-size:12px;
-    font-weight:800;
-    color:#202126;
-}
-
-.customer-strip{
-    margin-top:5px;
-    padding:12px 0;
-    border-top:1px solid #ededf0;
-    border-bottom:0;
-}
-
-.customer-name{font-size:13px}
-.customer-meta{font-size:9px}
-.distance-badge{font-size:9px;min-height:25px}
-
-.order-summary{
-    padding:12px 0 0;
-    border-top:1px solid #ededf0;
-}
-
-.summary-label{font-size:8px}
-.summary-value{font-size:18px}
-
-.pack-btn{
-    height:46px;
-    border-radius:12px;
-}
-
-/* Products page */
 .product-card{
     grid-template-columns:62px minmax(0,1fr) auto;
     gap:11px;
@@ -667,8 +565,8 @@ button,input{font:inherit} button{cursor:pointer}
     height:62px;
 }
 
-.product-table-name{
-    display:none !important;
+.product-image img{
+    object-fit:contain;
 }
 
 .product-name{
@@ -678,14 +576,86 @@ button,input{font:inherit} button{cursor:pointer}
 
 .vendor-product-pack{
     margin-top:5px;
-    color:#666b72;
+    color:#6f747b;
     font-size:10px;
     font-weight:650;
     line-height:1.35;
 }
 
-.product-meta{
-    margin-top:7px;
+.vendor-cake-badge{
+    display:inline-flex;
+    align-items:center;
+    min-height:21px;
+    margin-top:6px;
+    padding:0 7px;
+    border-radius:999px;
+    background:#fff1f7;
+    color:#dc337d;
+    font-size:8px;
+    font-weight:800;
+}
+
+.cake-variant-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    margin-top:9px;
+}
+
+.cake-variant-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 92px;
+    align-items:center;
+    gap:8px;
+    padding:8px 9px;
+    border:1px solid #ececef;
+    border-radius:10px;
+    background:#fff;
+}
+
+.cake-variant-title{
+    min-width:0;
+    font-size:9px;
+    color:#5e6268;
+    font-weight:750;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.cake-variant-input{
+    width:100%;
+    height:32px;
+    padding:0 8px;
+    border:1px solid #e4e5e7;
+    border-radius:8px;
+    outline:none;
+    font-family:inherit;
+    font-size:10px;
+    font-weight:750;
+    text-align:right;
+}
+
+.cake-variant-input:focus{
+    border-color:#dc337d;
+    box-shadow:0 0 0 2px rgba(220,51,125,.08);
+}
+
+.cake-json-save{
+    width:100%;
+    height:36px;
+    margin-top:8px;
+    border:0;
+    border-radius:9px;
+    background:#dc337d;
+    color:#fff;
+    font-size:10px;
+    font-weight:850;
+    cursor:pointer;
+}
+
+.cake-json-save:disabled{
+    opacity:.55;
 }
 
 .product-meta-chip{
@@ -697,22 +667,62 @@ button,input{font:inherit} button{cursor:pointer}
     opacity:.55;
 }
 
+.order-card{
+    background:#fff;
+    border:1px solid #e9eaed;
+    border-radius:18px;
+    padding:14px;
+    box-shadow:0 6px 22px rgba(20,22,26,.05);
+}
+
+.order-item{
+    display:grid;
+    grid-template-columns:60px minmax(0,1fr) auto;
+    gap:10px;
+    align-items:center;
+    padding:11px 0;
+    border-bottom:1px solid #eeeeef;
+}
+
+.order-item:last-child{
+    border-bottom:0;
+}
+
+.order-image{
+    width:60px;
+    height:60px;
+    border-radius:12px;
+    background:#f6f6f7;
+}
+
+.order-image img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.vendor-order-pack{
+    margin-top:4px;
+    color:#747980;
+    font-size:10px;
+    font-weight:650;
+}
+
+.vendor-order-qty{
+    margin-top:5px;
+    color:#555b63;
+    font-size:10px;
+    font-weight:700;
+}
+
+.vendor-order-line-total{
+    min-width:65px;
+    text-align:right;
+    font-size:12px;
+    font-weight:850;
+}
+
 @media(max-width:430px){
-    .order-item{
-        grid-template-columns:58px minmax(0,1fr) auto;
-        gap:9px;
-    }
-
-    .order-image{
-        width:58px;
-        height:58px;
-    }
-
-    .vendor-order-line-total{
-        min-width:58px;
-        font-size:11px;
-    }
-
     .product-card{
         grid-template-columns:56px minmax(0,1fr) auto;
         gap:9px;
@@ -721,6 +731,20 @@ button,input{font:inherit} button{cursor:pointer}
     .product-image{
         width:56px;
         height:56px;
+    }
+
+    .order-item{
+        grid-template-columns:55px minmax(0,1fr) auto;
+        gap:9px;
+    }
+
+    .order-image{
+        width:55px;
+        height:55px;
+    }
+
+    .cake-variant-row{
+        grid-template-columns:minmax(0,1fr) 82px;
     }
 }
 
@@ -959,7 +983,12 @@ const PRODUCT_TABLES = [
     "food_items",
     "restaurant_food_items",
     "cakes",
-    "cezoocafe"
+    "cezoocafe",
+    "cool_drinks_products",
+    "vegetable_products",
+    "fruit_products",
+    "gsr_products",
+    "vijaya_lakshmi_products"
 ];
 
 
@@ -2239,27 +2268,86 @@ function getProductUnitValue(
 
 
 function getEditablePriceKey(product){
-    return getVendorPriceEditorKey(product);
+    return firstExistingKey(
+        product,
+        [
+            "discount_price",
+            "selling_price",
+            "sale_price",
+            "offer_price",
+            "price",
+            "original_price",
+            "mrp",
+            "regular_price"
+        ]
+    );
 }
 
 
 function getEditableQuantityKey(product){
-    return getVendorQuantityEditorKey(product);
+    /*
+      cakes are special: cake size/weight lives inside prices JSON,
+      not one quantity column. Do not pretend cake_weight exists in
+      the cakes product row.
+    */
+    if(
+        String(product?.product_table || "") === "cakes"
+    ){
+        return null;
+    }
+
+    return firstExistingKey(
+        product,
+        [
+            "quantity",
+            "product_quantity",
+            "food_quantity",
+            "icecream_quantity",
+            "net_quantity",
+            "net_weight",
+            "weight",
+            "quantity_value",
+            "qty_value",
+            "qty",
+            "portion",
+            "portion_size",
+            "serving",
+            "serving_size",
+            "pack_size",
+            "package_size",
+            "size",
+            "food_size",
+            "icecream_size",
+            "volume",
+            "variant",
+            "variant_name"
+        ]
+    );
 }
 
 
 function getEditableUnitKey(product){
-    return getVendorUnitEditorKey(product);
+    if(
+        String(product?.product_table || "") === "cakes"
+    ){
+        return null;
+    }
+
+    return firstExistingKey(
+        product,
+        [
+            "unit",
+            "product_unit",
+            "weight_unit",
+            "measurement_unit",
+            "quantity_unit",
+            "units",
+            "uom"
+        ]
+    );
 }
 
 
-
-/* =========================================================
-   CUSTOMER-STYLE PRODUCT VALUE RESOLVER
-
-   This mirrors the working Your Orders logic so Vendor sees the
-   same size / pack / quantity text that the customer sees.
-========================================================= */
 
 function vendorFirstImage(value){
 
@@ -2268,12 +2356,11 @@ function vendorFirstImage(value){
     }
 
     if(Array.isArray(value)){
-
         const first =
             value.find(
-                image =>
-                    typeof image === "string" &&
-                    image.trim()
+                item =>
+                    typeof item === "string" &&
+                    item.trim()
             );
 
         return first
@@ -2282,7 +2369,6 @@ function vendorFirstImage(value){
     }
 
     if(typeof value === "object"){
-
         return String(
             value.url ||
             value.src ||
@@ -2291,73 +2377,64 @@ function vendorFirstImage(value){
         ).trim();
     }
 
-    const text =
+    const raw =
         String(value).trim();
 
     if(
-        text.startsWith("[") ||
-        text.startsWith("{")
+        raw.startsWith("[") ||
+        raw.startsWith("{")
     ){
         try{
             return vendorFirstImage(
-                JSON.parse(text)
+                JSON.parse(raw)
             );
         }catch(error){}
     }
 
-    return text;
+    return raw;
 }
 
 
-function getVendorProductImage(source){
+function getVendorProductImage(product){
 
-    if(!source){
-        return "";
-    }
-
-    const directCandidates = [
-        source.image1,
-        source.image,
-        source.image_url,
-        source.product_image,
-        source.product_image_url,
-        source.food_image,
-        source.dish_image,
-        source.photo,
-        source.photo_url,
-        source.thumbnail,
-        source.thumbnail_url,
-        source.picture,
-        source.picture_url,
-        source.cover_image,
-        source.main_image
+    const direct = [
+        product?.image1,
+        product?.image,
+        product?.image_url,
+        product?.product_image,
+        product?.product_image_url,
+        product?.food_image,
+        product?.dish_image,
+        product?.photo,
+        product?.photo_url,
+        product?.thumbnail,
+        product?.thumbnail_url,
+        product?.picture,
+        product?.picture_url,
+        product?.cover_image,
+        product?.main_image
     ];
 
-    for(const candidate of directCandidates){
-
+    for(const value of direct){
         const image =
-            vendorFirstImage(
-                candidate
-            );
+            vendorFirstImage(value);
 
         if(image){
             return image;
         }
     }
 
-    const collectionCandidates = [
-        source.images,
-        source.product_images,
-        source.gallery,
-        source.photos
-    ];
-
-    for(const candidate of collectionCandidates){
-
+    for(
+        const value
+        of [
+            product?.images,
+            product?.product_images,
+            product?.gallery,
+            product?.photos
+        ]
+    ){
         const image =
-            vendorFirstImage(
-                candidate
-            );
+            vendorFirstImage(value);
 
         if(image){
             return image;
@@ -2368,138 +2445,118 @@ function getVendorProductImage(source){
 }
 
 
-function getVendorProductDisplayName(
-    item,
-    product
-){
+function getVendorProductPackText(product){
 
-    const source =
-        product || {};
-
-    /*
-     * restaurant_food_items customer screen uses item_name as the
-     * product name. For every other product table we use the same
-     * broad name fallback as the customer order screen.
-     */
-    return String(
-        item?.name ||
-        item?.product_name ||
-        item?.title ||
-        item?.item_name ||
-        item?.food_name ||
-        item?.dish_name ||
-        item?.restaurant_item_name ||
-        item?.cake_name ||
-        source.name ||
-        source.product_name ||
-        source.title ||
-        source.item_name ||
-        source.food_name ||
-        source.dish_name ||
-        source.restaurant_item_name ||
-        source.cake_name ||
-        `Product ${getProductId(item) || source.id || ""}`
-    ).trim();
-}
-
-
-function getVendorPackValue(source){
-
-    if(!source){
+    if(!product){
         return "";
     }
 
-    /*
-     * CAKES
-     */
-    const cakeWeight =
-        source.cake_weight;
-
     if(
-        cakeWeight !== undefined &&
-        cakeWeight !== null &&
-        String(cakeWeight).trim()
+        String(product.product_table || "") === "cakes"
     ){
-        return String(cakeWeight)
-            .replace(/\s+/g," ")
-            .trim();
+        const parts = [];
+
+        const cakePrices =
+            parseCakePrices(
+                product.prices
+            );
+
+        Object.entries(cakePrices)
+            .forEach(
+                ([type,weights])=>{
+
+                    if(
+                        !weights ||
+                        typeof weights !== "object" ||
+                        Array.isArray(weights)
+                    ){
+                        return;
+                    }
+
+                    Object.keys(weights)
+                        .forEach(
+                            weight => {
+
+                                const label =
+                                    [
+                                        type,
+                                        weight
+                                    ]
+                                    .filter(Boolean)
+                                    .join(" ");
+
+                                if(label){
+                                    parts.push(label);
+                                }
+                            }
+                        );
+                }
+            );
+
+        if(parts.length){
+            return parts.join(" • ");
+        }
+
+        return String(
+            product.sub_txt ||
+            ""
+        ).trim();
     }
 
-    /*
-     * CAFE and other tables sometimes store a complete descriptive
-     * quantity in one field:
-     *   300ml / Small Pack / Medium Pack / Half / Full
-     */
-    const directQuantity =
-        source.quantity;
+    const descriptiveQuantity =
+        product.quantity;
 
     if(
-        directQuantity !== undefined &&
-        directQuantity !== null
+        descriptiveQuantity !== undefined &&
+        descriptiveQuantity !== null
     ){
-        const text =
-            String(directQuantity)
-                .replace(/\s+/g," ")
+        const raw =
+            String(descriptiveQuantity)
                 .trim();
 
         if(
-            text &&
-            (
-                /[a-zA-Z]/.test(text) ||
-                /\b(half|full|small|medium|large|regular|jumbo|pack|ml|ltr|litre|liter|kg|gm|g|pcs|pc|piece|pieces)\b/i
-                    .test(text)
-            )
+            raw &&
+            /[a-zA-Z]/.test(raw)
         ){
-            return text;
+            return raw;
         }
     }
 
-    /*
-     * FOOD / ICE CREAM / CAFE / CAKES / OTHER STORES.
-     * Same broad field order used by the customer order code.
-     */
     const direct = [
-        source.food_quantity,
-        source.food_size,
-        source.portion,
-        source.portion_size,
-        source.serving,
-        source.serving_size,
-        source.half_full,
-        source.half_or_full,
-
-        source.icecream_quantity,
-        source.icecream_size,
-
-        source.pack_text,
-        source.pack,
-        source.pack_size,
-        source.package_size,
-        source.package,
-
-        source.net_quantity,
-        source.net_content,
-
-        source.variant_label,
-        source.variant_name,
-        source.variant_text,
-        source.variant,
-
-        source.option_name,
-        source.option_label,
-        source.option_text,
-        source.option,
-
-        source.size_label,
-        source.size_name,
-        source.size,
-
-        source.weight_label,
-        source.weight_text
+        product.cake_weight,
+        product.food_quantity,
+        product.food_size,
+        product.portion,
+        product.portion_size,
+        product.serving,
+        product.serving_size,
+        product.half_full,
+        product.half_or_full,
+        product.icecream_quantity,
+        product.icecream_size,
+        product.pack_text,
+        product.pack,
+        product.pack_size,
+        product.package_size,
+        product.package,
+        product.net_quantity,
+        product.net_content,
+        product.variant_label,
+        product.variant_name,
+        product.variant_text,
+        product.variant,
+        product.option_name,
+        product.option_label,
+        product.option_text,
+        product.option,
+        product.size_label,
+        product.size_name,
+        product.size,
+        product.weight_label,
+        product.weight_text
     ];
 
     for(const value of direct){
-
         if(
             value !== undefined &&
             value !== null &&
@@ -2511,98 +2568,43 @@ function getVendorPackValue(source){
         }
     }
 
-    /*
-     * GROCERIES / FRESH:
-     * quantity + unit
-     */
     const quantity =
-        source.product_quantity ??
-        source.net_weight ??
-        source.weight ??
-        source.quantity_value ??
-        source.qty_value ??
-        source.quantity ??
-        source.qty ??
+        product.product_quantity ??
+        product.net_weight ??
+        product.weight ??
+        product.quantity_value ??
+        product.qty_value ??
+        product.quantity ??
+        product.qty ??
         "";
 
     const unit =
-        source.product_unit ??
-        source.weight_unit ??
-        source.measurement_unit ??
-        source.quantity_unit ??
-        source.unit ??
-        source.units ??
-        source.uom ??
+        product.product_unit ??
+        product.weight_unit ??
+        product.measurement_unit ??
+        product.quantity_unit ??
+        product.unit ??
+        product.units ??
+        product.uom ??
         "";
 
-    const quantityText =
-        String(quantity ?? "")
-            .trim();
+    const q =
+        String(quantity ?? "").trim();
 
-    const unitText =
-        String(unit ?? "")
-            .trim();
+    const u =
+        String(unit ?? "").trim();
 
-    if(
-        quantityText &&
-        unitText
-    ){
-        return `${quantityText} ${unitText}`
+    if(q && u){
+        return `${q} ${u}`
             .replace(/\s+/g," ")
             .trim();
     }
 
-    if(quantityText){
-        return quantityText
-            .replace(/\s+/g," ")
-            .trim();
-    }
-
-    if(unitText){
-        return unitText
-            .replace(/\s+/g," ")
-            .trim();
-    }
-
-    return "";
+    return q || u || "";
 }
 
 
-function getVendorOrderPackText(
-    item,
-    product
-){
-
-    /*
-     * For restaurant_food_items, the customer order screen gives
-     * priority to item_name as its sub/pack text.
-     */
-    if(
-        getProductTable(item) ===
-        "restaurant_food_items"
-    ){
-        const restaurantItemText =
-            String(
-                product?.item_name ||
-                item?.item_name ||
-                ""
-            )
-            .trim();
-
-        if(restaurantItemText){
-            return restaurantItemText;
-        }
-    }
-
-    return (
-        getVendorPackValue(item) ||
-        getVendorPackValue(product) ||
-        ""
-    );
-}
-
-
-function getVendorProductAvailabilityKey(product){
+function getProductAvailabilityKey(product){
 
     return firstExistingKey(
         product,
@@ -2617,10 +2619,10 @@ function getVendorProductAvailabilityKey(product){
 }
 
 
-function getVendorProductAvailability(product){
+function getProductAvailability(product){
 
     const key =
-        getVendorProductAvailabilityKey(
+        getProductAvailabilityKey(
             product
         );
 
@@ -2639,11 +2641,6 @@ function getVendorProductAvailability(product){
         return value !== 0;
     }
 
-    const text =
-        String(value ?? "")
-            .trim()
-            .toLowerCase();
-
     return ![
         "false",
         "0",
@@ -2652,17 +2649,21 @@ function getVendorProductAvailability(product){
         "out_of_stock",
         "closed",
         "unavailable"
-    ].includes(text);
+    ].includes(
+        String(value ?? "")
+            .trim()
+            .toLowerCase()
+    );
 }
 
 
-function getVendorProductAvailabilityDbValue(
+function getProductAvailabilityDbValue(
     product,
     checked
 ){
 
     const key =
-        getVendorProductAvailabilityKey(
+        getProductAvailabilityKey(
             product
         );
 
@@ -2681,15 +2682,15 @@ function getVendorProductAvailabilityDbValue(
         return checked ? 1 : 0;
     }
 
-    const text =
+    const raw =
         String(old ?? "")
             .trim()
             .toLowerCase();
 
     if(
         key === "is_open" ||
-        text === "open" ||
-        text === "closed"
+        raw === "open" ||
+        raw === "closed"
     ){
         return checked
             ? "open"
@@ -2697,98 +2698,416 @@ function getVendorProductAvailabilityDbValue(
     }
 
     if(
-        text === "yes" ||
-        text === "no"
+        raw === "yes" ||
+        raw === "no"
     ){
         return checked
             ? "yes"
             : "no";
     }
 
-    if(
-        text === "in_stock" ||
-        text === "out_of_stock"
-    ){
-        return checked
-            ? "in_stock"
-            : "out_of_stock";
-    }
-
     return checked;
 }
 
 
-function getVendorQuantityEditorKey(product){
+/* =========================================================
+   CAKES TABLE
+   Exact customer cake code uses:
+   id,cake_name,image,prices,bakery_name,is_available,
+   sub_txt,price,created_at
+
+   `prices` is JSON:
+   {
+      "type": {
+          "0.5kg": 399,
+          "1kg": 699
+      }
+   }
+========================================================= */
+
+function parseCakePrices(value){
+
+    if(
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+    ){
+        return JSON.parse(
+            JSON.stringify(value)
+        );
+    }
+
+    try{
+        const parsed =
+            JSON.parse(
+                value || "{}"
+            );
+
+        return (
+            parsed &&
+            typeof parsed === "object" &&
+            !Array.isArray(parsed)
+        )
+            ? parsed
+            : {};
+    }catch(error){
+        return {};
+    }
+}
+
+
+function getCakeVariantRows(product){
+
+    const result = [];
+
+    const cakePrices =
+        parseCakePrices(
+            product?.prices
+        );
+
+    Object.entries(cakePrices)
+        .forEach(
+            ([type,weights])=>{
+
+                if(
+                    !weights ||
+                    typeof weights !== "object" ||
+                    Array.isArray(weights)
+                ){
+                    return;
+                }
+
+                Object.entries(weights)
+                    .forEach(
+                        ([weight,value])=>{
+
+                            result.push({
+                                type,
+                                weight,
+                                price:
+                                    Number(value) || 0
+                            });
+                        }
+                    );
+            }
+        );
 
     /*
-     * Exact editable row field.
-     * This includes the quantity/size fields that customer display
-     * can read, so products no longer show blank quantity simply
-     * because their table uses food_size / cake_weight / etc.
-     */
-    return firstExistingKey(
-        product,
-        [
-            "quantity",
-            "product_quantity",
-            "food_quantity",
-            "icecream_quantity",
-            "cake_weight",
-            "net_quantity",
-            "net_weight",
-            "weight",
-            "quantity_value",
-            "qty_value",
-            "qty",
-            "portion",
-            "portion_size",
-            "serving",
-            "serving_size",
-            "pack_size",
-            "package_size",
-            "size",
-            "food_size",
-            "icecream_size",
-            "variant",
-            "variant_name"
-        ]
+      Special cake rows may use the simple `price` column.
+      Customer code falls back to type=single / weight=unit.
+    */
+    if(
+        !result.length &&
+        Number(product?.price) > 0
+    ){
+        result.push({
+            type:"single",
+            weight:
+                String(
+                    product?.sub_txt ||
+                    "unit"
+                ).trim() || "unit",
+            price:
+                Number(product.price) || 0,
+            simple:true
+        });
+    }
+
+    return result;
+}
+
+
+function cakeVariantInputId(
+    table,
+    id,
+    type,
+    weight
+){
+    return (
+        "cakeVariant_"
+        +
+        productDomKey(
+            table,
+            id
+        )
+        +
+        "_"
+        +
+        String(type)
+            .replace(/[^a-zA-Z0-9_-]/g,"_")
+        +
+        "_"
+        +
+        String(weight)
+            .replace(/[^a-zA-Z0-9_-]/g,"_")
     );
 }
 
 
-function getVendorUnitEditorKey(product){
+function renderCakeVariantEditor(product){
 
-    return firstExistingKey(
-        product,
-        [
-            "unit",
-            "product_unit",
-            "weight_unit",
-            "measurement_unit",
-            "quantity_unit",
-            "units",
-            "uom"
-        ]
-    );
+    const rows =
+        getCakeVariantRows(
+            product
+        );
+
+    if(!rows.length){
+        return `
+            <div class="vendor-cake-badge">
+                CAKE • NO PRICE VARIANTS
+            </div>
+        `;
+    }
+
+    return `
+        <div class="vendor-cake-badge">
+            CAKE VARIANTS
+        </div>
+
+        <div class="cake-variant-list">
+            ${
+                rows.map(
+                    row => {
+
+                        const inputId =
+                            cakeVariantInputId(
+                                product.product_table,
+                                product.id,
+                                row.type,
+                                row.weight
+                            );
+
+                        return `
+                            <div class="cake-variant-row">
+                                <div class="cake-variant-title">
+                                    ${escapeHTML(
+                                        [
+                                            row.type,
+                                            row.weight
+                                        ]
+                                        .filter(Boolean)
+                                        .join(" • ")
+                                    )}
+                                </div>
+
+                                <input
+                                    class="cake-variant-input"
+                                    id="${inputId}"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    inputmode="decimal"
+                                    value="${escapeHTML(row.price)}"
+                                >
+                            </div>
+                        `;
+                    }
+                ).join("")
+            }
+        </div>
+
+        <button
+            type="button"
+            class="cake-json-save"
+            onclick="saveCakePrices(
+                '${product.product_table}',
+                '${product.id}',
+                this
+            )"
+        >
+            SAVE CAKE PRICES
+        </button>
+    `;
 }
 
 
-function getVendorPriceEditorKey(product){
+window.saveCakePrices =
+async function(
+    table,
+    id,
+    button
+){
 
-    return firstExistingKey(
-        product,
-        [
-            "discount_price",
-            "selling_price",
-            "sale_price",
-            "offer_price",
-            "price",
-            "original_price",
-            "mrp",
-            "regular_price"
-        ]
-    );
-}
+    const product =
+        vendorProducts.find(
+            item =>
+                normalizeTable(
+                    item.product_table
+                ) ===
+                    normalizeTable(table)
+                &&
+                String(item.id) ===
+                    String(id)
+        );
+
+    if(!product){
+
+        toast(
+            "Cake product not found",
+            true
+        );
+
+        return;
+    }
+
+    const rows =
+        getCakeVariantRows(
+            product
+        );
+
+    if(!rows.length){
+
+        toast(
+            "No cake price variants found",
+            true
+        );
+
+        return;
+    }
+
+    const nextPrices =
+        parseCakePrices(
+            product.prices
+        );
+
+    let simplePrice =
+        null;
+
+    for(const row of rows){
+
+        const input =
+            document.getElementById(
+                cakeVariantInputId(
+                    table,
+                    id,
+                    row.type,
+                    row.weight
+                )
+            );
+
+        if(!input){
+            continue;
+        }
+
+        const value =
+            Number(
+                input.value
+            );
+
+        if(
+            !Number.isFinite(value) ||
+            value < 0
+        ){
+
+            toast(
+                "Enter valid cake price",
+                true
+            );
+
+            return;
+        }
+
+        if(row.simple){
+
+            simplePrice =
+                value;
+
+            continue;
+        }
+
+        if(
+            !nextPrices[row.type] ||
+            typeof nextPrices[row.type] !== "object"
+        ){
+            nextPrices[row.type] = {};
+        }
+
+        nextPrices[row.type][row.weight] =
+            value;
+    }
+
+    const updates = {};
+
+    if(simplePrice !== null){
+        updates.price =
+            simplePrice;
+    }else{
+        updates.prices =
+            nextPrices;
+    }
+
+    const oldHtml =
+        button.innerHTML;
+
+    button.disabled =
+        true;
+
+    button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    try{
+
+        const {
+            data,
+            error
+        } =
+            await sb
+                .from(table)
+                .update(updates)
+                .eq(
+                    "id",
+                    id
+                )
+                .eq(
+                    "vendor_id",
+                    getProductVendorId()
+                )
+                .select("*")
+                .maybeSingle();
+
+        if(error){
+            throw error;
+        }
+
+        if(!data){
+            throw new Error(
+                "Cake row was not updated. Check cake vendor_id."
+            );
+        }
+
+        Object.assign(
+            product,
+            data
+        );
+
+        renderProducts();
+
+        toast(
+            "Cake prices updated"
+        );
+
+    }catch(error){
+
+        console.error(
+            "Cake JSON price update error:",
+            error
+        );
+
+        button.innerHTML =
+            oldHtml;
+
+        toast(
+            error?.message ||
+            "Cake price update failed",
+            true
+        );
+
+    }finally{
+
+        button.disabled =
+            false;
+    }
+};
 
 
 function productDomKey(
@@ -4809,91 +5128,118 @@ function renderOrders(){
             <div class="items-wrap">
 
                 ${
-                    items.map(item=>{
+                    items.map(
+                        item => {
 
-                        const product =
-                            item._product ||
-                            {};
+                            const product =
+                                item._product ||
+                                {};
 
-                        const image =
-                            getVendorProductImage(
-                                product
-                            ) ||
-                            getVendorProductImage(
-                                item
-                            );
+                            const image =
+                                getVendorProductImage(
+                                    product
+                                ) ||
+                                getVendorProductImage(
+                                    item
+                                );
 
-                        const name =
-                            getVendorProductDisplayName(
-                                item,
-                                product
-                            );
+                            const name =
+                                getProductName(
+                                    item,
+                                    product
+                                );
 
-                        const packText =
-                            getVendorOrderPackText(
-                                item,
-                                product
-                            );
+                            const orderedQty =
+                                getQuantity(
+                                    item
+                                );
 
-                        const orderedQty =
-                            getQuantity(item);
+                            /*
+                              For cake orders the order JSON already saves
+                              cake_type + cake_weight. Use those exact values
+                              first, matching the customer checkout code.
+                            */
+                            let packText = "";
 
-                        const lineTotal =
-                            getOrderLineTotal(
-                                item,
-                                product
-                            );
+                            if(
+                                getProductTable(item) ===
+                                "cakes"
+                            ){
+                                packText =
+                                    [
+                                        item.cake_type,
+                                        item.cake_weight
+                                    ]
+                                    .filter(Boolean)
+                                    .join(" • ");
+                            }
 
-                        return `
+                            if(!packText){
+                                packText =
+                                    getVendorProductPackText(
+                                        item
+                                    ) ||
+                                    getVendorProductPackText(
+                                        product
+                                    );
+                            }
 
-                            <div class="order-item">
+                            const lineTotal =
+                                getOrderLineTotal(
+                                    item,
+                                    product
+                                );
 
-                                <div class="order-image">
-                                    ${
-                                        image
-                                        ? `
-                                            <img
-                                                src="${escapeHTML(image)}"
-                                                alt="${escapeHTML(name)}"
-                                                loading="lazy"
-                                            >
-                                        `
-                                        : `
-                                            <i class="fa-solid fa-box"></i>
-                                        `
-                                    }
-                                </div>
+                            return `
+                                <div class="order-item">
 
-                                <div class="order-product">
-
-                                    <div class="product-title">
-                                        ${escapeHTML(name)}
+                                    <div class="order-image">
+                                        ${
+                                            image
+                                            ? `
+                                                <img
+                                                    src="${escapeHTML(image)}"
+                                                    alt="${escapeHTML(name)}"
+                                                    loading="lazy"
+                                                >
+                                            `
+                                            : `
+                                                <i class="fa-solid fa-box"></i>
+                                            `
+                                        }
                                     </div>
 
-                                    ${
-                                        packText
-                                        ? `
-                                            <div class="vendor-order-pack">
-                                                ${escapeHTML(packText)}
-                                            </div>
-                                        `
-                                        : ""
-                                    }
+                                    <div class="order-product">
 
-                                    <div class="vendor-order-qty">
-                                        Quantity: ${escapeHTML(orderedQty)}
+                                        <div class="product-title">
+                                            ${escapeHTML(name)}
+                                        </div>
+
+                                        ${
+                                            packText
+                                            ? `
+                                                <div class="vendor-order-pack">
+                                                    ${escapeHTML(packText)}
+                                                </div>
+                                            `
+                                            : ""
+                                        }
+
+                                        <div class="vendor-order-qty">
+                                            Quantity: ${escapeHTML(orderedQty)}
+                                        </div>
+
+                                    </div>
+
+                                    <div class="vendor-order-line-total">
+                                        ₹${lineTotal.toFixed(2)}
                                     </div>
 
                                 </div>
-
-                                <div class="vendor-order-line-total">
-                                    ₹${lineTotal.toFixed(2)}
-                                </div>
-
-                            </div>
-                        `;
-
-                    }).join("")
+                            `;
+                        }
+                    )
+                    .join("")
                 }
 
             </div>
@@ -5936,19 +6282,24 @@ function renderProducts(){
 
 
                 const availabilityKey =
-                    getVendorProductAvailabilityKey(
+                    getProductAvailabilityKey(
                         product
                     );
 
                 const stock =
-                    getVendorProductAvailability(
+                    getProductAvailability(
                         product
                     );
 
                 const packText =
-                    getVendorPackValue(
+                    getVendorProductPackText(
                         product
                     );
+
+                const isCake =
+                    String(
+                        product.product_table || ""
+                    ) === "cakes";
 
 
                 const domKey =
@@ -6023,6 +6374,12 @@ function renderProducts(){
                                 : ""
                             }
 
+                            ${
+                                isCake
+                                ? renderCakeVariantEditor(product)
+                                : ""
+                            }
+
                             <div class="product-table-name">
                                 ${escapeHTML(product.product_table)}
                             </div>
@@ -6038,7 +6395,9 @@ function renderProducts(){
                                             quantity === undefined ||
                                             String(quantity).trim() === ""
                                             ? (
-                                                packText || "—"
+                                                isCake
+                                                    ? "VARIANTS"
+                                                    : (packText || "—")
                                               )
                                             : quantity
                                         )}
@@ -6052,7 +6411,11 @@ function renderProducts(){
                                             unit === null ||
                                             unit === undefined ||
                                             String(unit).trim() === ""
-                                            ? "—"
+                                            ? (
+                                                isCake
+                                                    ? "JSON"
+                                                    : "—"
+                                              )
                                             : unit
                                         )}
                                     </span>
@@ -6081,6 +6444,7 @@ function renderProducts(){
                                         '${product.id}'
                                     )"
                                     aria-label="Edit price quantity and unit"
+                                    ${isCake ? "style=\"display:none\"" : ""}
                                 >
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
@@ -6117,7 +6481,7 @@ function renderProducts(){
                                         <input
                                             id="editQty_${domKey}"
                                             type="text"
-                                            value="${escapeHTML(quantity ?? packText ?? "")}"
+                                            value="${escapeHTML(quantity ?? "")}"
                                             ${quantityKey ? "" : "disabled"}
                                         >
                                     </div>
@@ -6458,7 +6822,7 @@ async function(
         if(!data){
 
             throw new Error(
-                "Product row was not updated. Check this product vendor assignment."
+                "Product row was not updated. Check this product vendor_id."
             );
         }
 
@@ -6654,7 +7018,7 @@ async function(
     }
 
     const availabilityKey =
-        getVendorProductAvailabilityKey(
+        getProductAvailabilityKey(
             product
         );
 
@@ -6664,7 +7028,7 @@ async function(
             !checkbox.checked;
 
         toast(
-            "Availability field not found for this product",
+            "Availability field not found",
             true
         );
 
@@ -6675,7 +7039,7 @@ async function(
         checkbox.checked;
 
     const dbValue =
-        getVendorProductAvailabilityDbValue(
+        getProductAvailabilityDbValue(
             product,
             checked
         );
@@ -6732,7 +7096,7 @@ async function(
     }catch(error){
 
         console.error(
-            "Product availability update error:",
+            "Stock update error:",
             {
                 table,
                 id,
