@@ -298,6 +298,66 @@ button,input{font:inherit} button{cursor:pointer}
 .page-title h1{font-size:22px}
 .page-title p{margin-top:5px;color:#999;font-size:9px}
 .product-count{margin-bottom:10px;color:#888;font-size:9px}
+
+.vendor-product-search{
+    position:relative;
+    width:100%;
+    margin:-5px 0 12px;
+}
+
+.vendor-product-search i{
+    position:absolute;
+    left:13px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#9a9ca2;
+    font-size:11px;
+    pointer-events:none;
+}
+
+.vendor-product-search input{
+    width:100%;
+    height:43px;
+    padding:0 38px 0 36px;
+    border:1px solid #e3e4e7;
+    border-radius:12px;
+    outline:none;
+    background:#fff;
+    color:#222;
+    font-size:11px;
+    font-weight:600;
+}
+
+.vendor-product-search input:focus{
+    border-color:#b9bcc2;
+}
+
+.vendor-product-search input::placeholder{
+    color:#a3a6ac;
+    font-weight:500;
+}
+
+.vendor-product-search-clear{
+    position:absolute;
+    right:8px;
+    top:50%;
+    transform:translateY(-50%);
+    width:28px;
+    height:28px;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    border-radius:8px;
+    background:#f3f4f5;
+    color:#777;
+    font-size:10px;
+}
+
+.vendor-product-search-clear.show{
+    display:flex;
+}
+
 .products-list{display:flex;flex-direction:column;gap:10px}
 .product-card{
     padding:13px;
@@ -858,6 +918,26 @@ button,input{font:inherit} button{cursor:pointer}
         <p>Manage product availability</p>
     </div>
 
+    <div class="vendor-product-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+            id="vendorProductSearch"
+            type="search"
+            autocomplete="off"
+            placeholder="Search all products"
+        >
+
+        <button
+            id="vendorProductSearchClear"
+            class="vendor-product-search-clear"
+            type="button"
+            aria-label="Clear product search"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
     <div id="productsCounter" class="product-count">0 products</div>
     <div id="productsDisplay" class="products-list"></div>
 </section>
@@ -1055,6 +1135,7 @@ let currentVendor = null;
 let productVendorId = null;
 
 let vendorProducts = [];
+let vendorProductSearchText = "";
 let vendorOrders = [];
 
 /*
@@ -1471,6 +1552,12 @@ document.getElementById("ordersDisplay");
 
 const productsDisplay =
 document.getElementById("productsDisplay");
+
+const vendorProductSearch =
+document.getElementById("vendorProductSearch");
+
+const vendorProductSearchClear =
+document.getElementById("vendorProductSearchClear");
 
 const storeStatusSwitch =
 document.getElementById("storeStatusSwitch");
@@ -4555,12 +4642,6 @@ async function loadVendorProducts(){
         all;
 
 
-    document.getElementById(
-        "productsCounter"
-    ).textContent =
-        `${all.length} products`;
-
-
     renderProducts();
 
 }
@@ -6780,6 +6861,180 @@ async function(
    PRODUCTS PAGE
 =========================== */
 
+function normalizeVendorProductSearch(
+    value
+){
+
+    return String(
+        value ?? ""
+    )
+    .trim()
+    .toLowerCase();
+
+}
+
+
+function vendorProductMatchesSearch(
+    product
+){
+
+    const query =
+        normalizeVendorProductSearch(
+            vendorProductSearchText
+        );
+
+
+    if(!query){
+        return true;
+    }
+
+
+    const searchText =
+        [
+            getVendorDisplayName(product),
+            getVendorSecondaryName(product),
+            getVendorShortDescription(product),
+
+            product?.name,
+            product?.product_name,
+            product?.item_name,
+            product?.food_name,
+            product?.dish_name,
+            product?.restaurant_item_name,
+            product?.cake_name,
+            product?.title,
+
+            product?.name_telugu,
+            product?.telugu_name,
+            product?.product_name_telugu,
+            product?.telugu,
+
+            product?.short_description,
+            product?.description,
+            product?.sub_txt,
+            product?.category,
+            product?.subcategory,
+            product?.bakery_name,
+            product?.restaurant_name,
+
+            product?.quantity,
+            product?.product_quantity,
+            product?.weight,
+            product?.size,
+            product?.pack_size,
+            product?.volume,
+            product?.unit,
+            product?.units,
+            product?.uom,
+
+            product?.product_table,
+            product?.id
+        ]
+        .map(
+            value =>
+                normalizeVendorProductSearch(
+                    value
+                )
+        )
+        .filter(Boolean)
+        .join(" ");
+
+
+    return searchText.includes(
+        query
+    );
+}
+
+
+function updateVendorProductSearchUI(
+    visibleCount
+){
+
+    const total =
+        vendorProducts.length;
+
+
+    const counter =
+        document.getElementById(
+            "productsCounter"
+        );
+
+
+    if(counter){
+
+        counter.textContent =
+            vendorProductSearchText.trim()
+
+            ? `${visibleCount} of ${total} products`
+
+            : `${total} products`;
+    }
+
+
+    if(vendorProductSearchClear){
+
+        vendorProductSearchClear.classList.toggle(
+            "show",
+            Boolean(
+                vendorProductSearchText.trim()
+            )
+        );
+    }
+
+}
+
+
+function bindVendorProductSearch(){
+
+    if(vendorProductSearch){
+
+        vendorProductSearch.addEventListener(
+            "input",
+            ()=>{
+
+                vendorProductSearchText =
+                    vendorProductSearch.value ||
+                    "";
+
+
+                renderProducts();
+
+            }
+        );
+    }
+
+
+    if(vendorProductSearchClear){
+
+        vendorProductSearchClear.addEventListener(
+            "click",
+            ()=>{
+
+                vendorProductSearchText =
+                    "";
+
+
+                if(vendorProductSearch){
+
+                    vendorProductSearch.value =
+                        "";
+
+                    vendorProductSearch.focus();
+                }
+
+
+                renderProducts();
+
+            }
+        );
+    }
+
+}
+
+
+bindVendorProductSearch();
+
+
 function renderProducts(){
 
     if(
@@ -6795,12 +7050,45 @@ function renderProducts(){
             </div>
         `;
 
+        updateVendorProductSearchUI(
+            0
+        );
+
+        return;
+    }
+
+
+    const visibleProducts =
+        vendorProducts.filter(
+            vendorProductMatchesSearch
+        );
+
+
+    updateVendorProductSearchUI(
+        visibleProducts.length
+    );
+
+
+    if(
+        !visibleProducts.length
+    ){
+
+        productsDisplay.innerHTML = `
+            <div class="empty-orders">
+                <div class="empty-icon">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <h2>No matching products</h2>
+                <p>Try another product name.</p>
+            </div>
+        `;
+
         return;
     }
 
 
     productsDisplay.innerHTML =
-        vendorProducts
+        visibleProducts
         .map(
             product => {
 
