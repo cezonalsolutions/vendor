@@ -10,13 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
->
-<script
-    src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
-></script>
+
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -715,32 +709,21 @@ button,input{font:inherit} button{cursor:pointer}
     overflow:hidden;
     border:1px solid #e2e4e7;
     border-radius:16px;
-    background:#eef1f3;
+    background:#e9edf0;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
 }
-
-#vendorLocationMap .leaflet-container{
-    width:100% !important;
-    height:100% !important;
-}
-
-.vendor-map-pin{
-    width:36px;
-    height:36px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg);
-    background:#e11d48;
-    border:3px solid #fff;
-    box-shadow:0 4px 14px rgba(0,0,0,.25);
-}
-
-.vendor-map-pin i{
-    transform:rotate(45deg);
-    color:#fff;
-    font-size:13px;
-}
+.vendor-native-map-tiles{position:absolute;inset:0;overflow:hidden;background:#e9edf0}
+.vendor-native-map-tile{position:absolute;width:256px;height:256px;object-fit:cover;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.vendor-native-map-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,.02),rgba(255,255,255,0))}
+.vendor-native-map-pin-wrap{position:absolute;left:50%;top:50%;z-index:20;width:44px;height:54px;transform:translate(-50%,-100%);display:flex;align-items:flex-end;justify-content:center;touch-action:none;cursor:grab}
+.vendor-native-map-pin-wrap.dragging{cursor:grabbing}
+.vendor-native-map-pin{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e11d48;border:3px solid #fff;box-shadow:0 5px 16px rgba(0,0,0,.28)}
+.vendor-native-map-pin i{transform:rotate(45deg);color:#fff;font-size:12px}
+.vendor-native-map-center-dot{position:absolute;left:50%;top:50%;z-index:10;width:6px;height:6px;border-radius:50%;transform:translate(-50%,-50%);background:rgba(225,29,72,.22);pointer-events:none}
+.vendor-native-map-loading{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#eef1f3;color:#777;font-size:10px;font-weight:700;pointer-events:none}
+.vendor-native-map-help{position:absolute;left:50%;bottom:10px;z-index:25;transform:translateX(-50%);padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 4px 14px rgba(0,0,0,.10);color:#6b6f75;font-size:8px;font-weight:750;white-space:nowrap;pointer-events:none}
 
 .vendor-location-selected{
     margin-top:12px;
@@ -1430,24 +1413,14 @@ button,input{font:inherit} button{cursor:pointer}
         </div>
 
         <div id="vendorLocationMap">
-            <div
-                id="vendorMapLoading"
-                style="
-                    position:absolute;
-                    inset:0;
-                    z-index:500;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    background:#eef1f3;
-                    color:#777;
-                    font-size:10px;
-                    font-weight:700;
-                    pointer-events:none;
-                "
-            >
-                Loading map...
+            <div id="vendorNativeMapTiles" class="vendor-native-map-tiles"></div>
+            <div class="vendor-native-map-shade"></div>
+            <div class="vendor-native-map-center-dot"></div>
+            <div id="vendorNativeMapPin" class="vendor-native-map-pin-wrap">
+                <div class="vendor-native-map-pin"><i class="fa-solid fa-store"></i></div>
             </div>
+            <div id="vendorMapLoading" class="vendor-native-map-loading">Loading map...</div>
+            <div class="vendor-native-map-help">Drag map or move the pin</div>
         </div>
 
         <div class="vendor-location-selected">
@@ -4874,6 +4847,12 @@ let vendorLocationMap =
 let vendorLocationMarker =
     null;
 
+let vendorMapCenter = { latitude:20.5937, longitude:78.9629 };
+let vendorMapZoom = 17;
+let vendorMapPanState = null;
+let vendorPinDragState = null;
+let vendorMapEventsInstalled = false;
+
 let vendorSelectedLocation = {
     address:"",
     pincode:"",
@@ -4991,65 +4970,13 @@ function setVendorSelectedLocation(
     }
 
 
-    if(
-        vendorLocationMap &&
-        window.L
-    ){
+    vendorMapCenter = {
+        latitude:lat,
+        longitude:lng
+    };
 
-        const point =
-            [lat,lng];
-
-
-        if(!vendorLocationMarker){
-
-            vendorLocationMarker =
-                L.marker(
-                    point,
-                    {
-                        draggable:true,
-                        icon:
-                            getVendorMapPinIcon()
-                    }
-                )
-                .addTo(
-                    vendorLocationMap
-                );
-
-
-            vendorLocationMarker.on(
-                "dragend",
-                async event=>{
-
-                    const position =
-                        event.target
-                            .getLatLng();
-
-
-                    await reverseVendorLocation(
-                        position.lat,
-                        position.lng
-                    );
-                }
-            );
-
-        }else{
-
-            vendorLocationMarker.setLatLng(
-                point
-            );
-        }
-
-
-        if(moveMap){
-
-            vendorLocationMap.setView(
-                point,
-                Math.max(
-                    vendorLocationMap.getZoom(),
-                    17
-                )
-            );
-        }
+    if(moveMap){
+        renderVendorNativeMap();
     }
 
 }
@@ -5200,6 +5127,9 @@ async function reverseVendorLocation(
         );
     }
 
+
+    renderVendorNativeMap();
+
 }
 
 
@@ -5345,291 +5275,317 @@ async function searchVendorLocation(){
 }
 
 
-let vendorLeafletPromise = null;
+/* =========================================================
+   DEPENDENCY-FREE STORE MAP
+========================================================= */
 
-
-function ensureVendorLeaflet(){
-
-    if(window.L){
-        return Promise.resolve(window.L);
-    }
-
-
-    if(vendorLeafletPromise){
-        return vendorLeafletPromise;
-    }
-
-
-    vendorLeafletPromise =
-        new Promise(
-            (resolve,reject)=>{
-
-                if(
-                    !document.querySelector(
-                        'link[data-cezoo-leaflet]'
-                    )
-                ){
-                    const css =
-                        document.createElement(
-                            "link"
-                        );
-
-                    css.rel =
-                        "stylesheet";
-
-                    css.href =
-                        "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
-
-                    css.dataset.cezooLeaflet =
-                        "1";
-
-                    document.head.appendChild(
-                        css
-                    );
-                }
-
-
-                const existing =
-                    document.querySelector(
-                        'script[data-cezoo-leaflet]'
-                    );
-
-
-                if(existing){
-
-                    existing.addEventListener(
-                        "load",
-                        ()=>resolve(window.L),
-                        {once:true}
-                    );
-
-                    existing.addEventListener(
-                        "error",
-                        ()=>reject(
-                            new Error(
-                                "Map library failed to load"
-                            )
-                        ),
-                        {once:true}
-                    );
-
-                    return;
-                }
-
-
-                const script =
-                    document.createElement(
-                        "script"
-                    );
-
-                script.src =
-                    "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
-
-                script.async =
-                    true;
-
-                script.dataset.cezooLeaflet =
-                    "1";
-
-
-                script.onload =
-                    ()=>{
-
-                        if(window.L){
-                            resolve(window.L);
-                        }else{
-                            reject(
-                                new Error(
-                                    "Map library unavailable"
-                                )
-                            );
-                        }
-                    };
-
-
-                script.onerror =
-                    ()=>reject(
-                        new Error(
-                            "Map library failed to load"
-                        )
-                    );
-
-
-                document.head.appendChild(
-                    script
-                );
-            }
-        );
-
-
-    return vendorLeafletPromise;
+function vendorClampLatitude(value){
+    return Math.max(-85.05112878,Math.min(85.05112878,Number(value)||0));
 }
 
-
-function getVendorMapPinIcon(){
-
-    return L.divIcon({
-        className:"",
-        html:
-            '<div class="vendor-map-pin">' +
-                '<i class="fa-solid fa-store"></i>' +
-            '</div>',
-        iconSize:[36,36],
-        iconAnchor:[18,36]
-    });
+function vendorLngToWorldX(lng,zoom){
+    const scale=256*Math.pow(2,zoom);
+    return ((Number(lng)+180)/360)*scale;
 }
 
+function vendorLatToWorldY(lat,zoom){
+    const latitude=vendorClampLatitude(lat);
+    const sin=Math.sin(latitude*Math.PI/180);
+    const scale=256*Math.pow(2,zoom);
+    return (0.5-Math.log((1+sin)/(1-sin))/(4*Math.PI))*scale;
+}
 
-async function initVendorLocationMap(){
+function vendorWorldXToLng(x,zoom){
+    const scale=256*Math.pow(2,zoom);
+    return (x/scale*360)-180;
+}
 
-    try{
+function vendorWorldYToLat(y,zoom){
+    const scale=256*Math.pow(2,zoom);
+    const n=Math.PI-2*Math.PI*y/scale;
+    return 180/Math.PI*Math.atan(Math.sinh(n));
+}
 
-        await ensureVendorLeaflet();
+function vendorMoveMapByPixels(dx,dy){
+    const centerX=vendorLngToWorldX(vendorMapCenter.longitude,vendorMapZoom);
+    const centerY=vendorLatToWorldY(vendorMapCenter.latitude,vendorMapZoom);
+    vendorMapCenter={
+        latitude:vendorWorldYToLat(centerY-dy,vendorMapZoom),
+        longitude:vendorWorldXToLng(centerX-dx,vendorMapZoom)
+    };
+}
 
-    }catch(error){
+function vendorMovePinByPixels(dx,dy){
+    const centerX=vendorLngToWorldX(vendorMapCenter.longitude,vendorMapZoom);
+    const centerY=vendorLatToWorldY(vendorMapCenter.latitude,vendorMapZoom);
+    vendorMapCenter={
+        latitude:vendorWorldYToLat(centerY+dy,vendorMapZoom),
+        longitude:vendorWorldXToLng(centerX+dx,vendorMapZoom)
+    };
+}
 
-        console.error(
-            "Leaflet load error:",
-            error
-        );
+function renderVendorNativeMap(){
 
-        toast(
-            "Map could not load. Check internet connection.",
-            true
-        );
+    const map=document.getElementById("vendorLocationMap");
+    const tiles=document.getElementById("vendorNativeMapTiles");
+    const loading=document.getElementById("vendorMapLoading");
 
+    if(!map||!tiles){return;}
+
+    const width=map.clientWidth||360;
+    const height=map.clientHeight||320;
+    const centerX=vendorLngToWorldX(vendorMapCenter.longitude,vendorMapZoom);
+    const centerY=vendorLatToWorldY(vendorMapCenter.latitude,vendorMapZoom);
+    const leftWorld=centerX-width/2;
+    const topWorld=centerY-height/2;
+
+    const firstTileX=Math.floor(leftWorld/256)-1;
+    const firstTileY=Math.floor(topWorld/256)-1;
+    const lastTileX=Math.floor((leftWorld+width)/256)+1;
+    const lastTileY=Math.floor((topWorld+height)/256)+1;
+    const maxTile=Math.pow(2,vendorMapZoom);
+
+    let html="";
+
+    for(let tileY=firstTileY;tileY<=lastTileY;tileY++){
+
+        if(tileY<0||tileY>=maxTile){continue;}
+
+        for(let tileX=firstTileX;tileX<=lastTileX;tileX++){
+
+            const wrappedX=((tileX%maxTile)+maxTile)%maxTile;
+            const left=tileX*256-leftWorld;
+            const top=tileY*256-topWorld;
+
+            html+=`
+                <img
+                    class="vendor-native-map-tile"
+                    src="https://a.tile.openstreetmap.org/${vendorMapZoom}/${wrappedX}/${tileY}.png"
+                    alt=""
+                    draggable="false"
+                    style="left:${left}px;top:${top}px"
+                >
+            `;
+        }
+    }
+
+    tiles.innerHTML=html;
+
+    if(loading){
+        loading.style.display="flex";
+        loading.textContent="Loading map...";
+    }
+
+    const images=tiles.querySelectorAll("img");
+
+    if(!images.length){
+        if(loading){loading.textContent="Map unavailable";}
         return;
     }
 
+    let loadedCount=0;
+    let failedCount=0;
+    let overlayClosed=false;
 
-    if(!vendorLocationMap){
+    const closeOverlay=()=>{
+        if(overlayClosed){return;}
+        overlayClosed=true;
+        if(loading){
+            loading.style.display="none";
+        }
+    };
 
-        vendorLocationMap =
-            L.map(
-                "vendorLocationMap",
-                {
-                    zoomControl:true
-                }
-            );
+    const tileLoaded=()=>{
+        loadedCount++;
+        closeOverlay();
+    };
 
+    const tileFailed=()=>{
+        failedCount++;
 
-        const vendorTiles =
-            L.tileLayer(
-                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {
-                    minZoom:2,
-                    maxZoom:19,
-                    crossOrigin:true,
-                    attribution:
-                        "&copy; OpenStreetMap contributors"
-                }
-            )
-            .addTo(
-                vendorLocationMap
-            );
-
-
-        const hideVendorMapLoading =
-            ()=>{
-
-                const loading =
-                    document.getElementById(
-                        "vendorMapLoading"
-                    );
-
-                if(loading){
-                    loading.style.display =
-                        "none";
-                }
-            };
-
-
-        vendorTiles.once(
-            "load",
-            hideVendorMapLoading
-        );
-
-
-        window.setTimeout(
-            hideVendorMapLoading,
-            2500
-        );
-
-
-        vendorLocationMap.on(
-            "click",
-            async event=>{
-
-                await reverseVendorLocation(
-                    event.latlng.lat,
-                    event.latlng.lng
-                );
-
-
-                setVendorSelectedLocation(
-                    vendorSelectedLocation,
-                    false
-                );
+        if(
+            failedCount >= images.length &&
+            loadedCount === 0
+        ){
+            if(loading){
+                loading.style.display="flex";
+                loading.style.background="#f5f5f6";
+                loading.style.color="#777";
+                loading.textContent="Map tiles blocked by this WebView";
             }
-        );
-    }
+        }
+    };
 
+    images.forEach(image=>{
 
-    const savedLat =
-        normalizeCoordinate(
-            currentVendor
-                ?.vendor_latitude
-        );
+        if(
+            image.complete &&
+            image.naturalWidth > 0
+        ){
+            tileLoaded();
+            return;
+        }
 
-    const savedLng =
-        normalizeCoordinate(
-            currentVendor
-                ?.vendor_longitude
-        );
-
-
-    if(
-        savedLat !== null &&
-        savedLng !== null
-    ){
-
-        setVendorSelectedLocation(
-            {
-                latitude:
-                    savedLat,
-                longitude:
-                    savedLng,
-                address:
-                    currentVendor
-                        ?.vendor_location ||
-                    currentVendor
-                        ?.location ||
-                    "",
-                pincode:
-                    currentVendor
-                        ?.vendor_pincode ||
-                    ""
-            },
-            true
+        image.addEventListener(
+            "load",
+            tileLoaded,
+            {once:true}
         );
 
-    }else{
-
-        vendorLocationMap.setView(
-            [20.5937,78.9629],
-            5
+        image.addEventListener(
+            "error",
+            tileFailed,
+            {once:true}
         );
-    }
-
+    });
 
     window.setTimeout(
         ()=>{
-            vendorLocationMap
-                ?.invalidateSize();
+            if(loadedCount > 0){
+                closeOverlay();
+            }else if(loading){
+                loading.style.display="flex";
+                loading.textContent="Map tiles blocked by this WebView";
+            }
         },
-        120
+        4000
     );
+}
 
+function installVendorNativeMapEvents(){
+
+    if(vendorMapEventsInstalled){return;}
+
+    const map=document.getElementById("vendorLocationMap");
+    const pin=document.getElementById("vendorNativeMapPin");
+
+    if(!map||!pin){return;}
+
+    vendorMapEventsInstalled=true;
+
+    map.addEventListener("pointerdown",event=>{
+
+        if(event.target.closest("#vendorNativeMapPin")){return;}
+
+        vendorMapPanState={
+            pointerId:event.pointerId,
+            startX:event.clientX,
+            startY:event.clientY
+        };
+
+        try{map.setPointerCapture(event.pointerId);}catch(error){}
+    });
+
+    map.addEventListener("pointermove",event=>{
+
+        if(!vendorMapPanState||vendorMapPanState.pointerId!==event.pointerId){return;}
+
+        const dx=event.clientX-vendorMapPanState.startX;
+        const dy=event.clientY-vendorMapPanState.startY;
+
+        vendorMapPanState.startX=event.clientX;
+        vendorMapPanState.startY=event.clientY;
+
+        vendorMoveMapByPixels(dx,dy);
+        renderVendorNativeMap();
+    });
+
+    const finishPan=async event=>{
+
+        if(!vendorMapPanState||vendorMapPanState.pointerId!==event.pointerId){return;}
+
+        vendorMapPanState=null;
+
+        await reverseVendorLocation(
+            vendorMapCenter.latitude,
+            vendorMapCenter.longitude
+        );
+
+        renderVendorNativeMap();
+    };
+
+    map.addEventListener("pointerup",finishPan);
+    map.addEventListener("pointercancel",finishPan);
+
+    pin.addEventListener("pointerdown",event=>{
+
+        event.stopPropagation();
+
+        vendorPinDragState={
+            pointerId:event.pointerId,
+            startX:event.clientX,
+            startY:event.clientY
+        };
+
+        pin.classList.add("dragging");
+
+        try{pin.setPointerCapture(event.pointerId);}catch(error){}
+    });
+
+    pin.addEventListener("pointermove",event=>{
+
+        if(!vendorPinDragState||vendorPinDragState.pointerId!==event.pointerId){return;}
+
+        const dx=event.clientX-vendorPinDragState.startX;
+        const dy=event.clientY-vendorPinDragState.startY;
+
+        pin.style.transform=
+            `translate(calc(-50% + ${dx}px), calc(-100% + ${dy}px))`;
+    });
+
+    const finishPin=async event=>{
+
+        if(!vendorPinDragState||vendorPinDragState.pointerId!==event.pointerId){return;}
+
+        const dx=event.clientX-vendorPinDragState.startX;
+        const dy=event.clientY-vendorPinDragState.startY;
+
+        vendorPinDragState=null;
+        pin.classList.remove("dragging");
+        pin.style.transform="translate(-50%,-100%)";
+
+        vendorMovePinByPixels(dx,dy);
+
+        await reverseVendorLocation(
+            vendorMapCenter.latitude,
+            vendorMapCenter.longitude
+        );
+
+        renderVendorNativeMap();
+    };
+
+    pin.addEventListener("pointerup",finishPin);
+    pin.addEventListener("pointercancel",finishPin);
+}
+
+async function initVendorLocationMap(){
+
+    vendorLocationMap=document.getElementById("vendorLocationMap");
+
+    installVendorNativeMapEvents();
+
+    const savedLat=normalizeCoordinate(currentVendor?.vendor_latitude);
+    const savedLng=normalizeCoordinate(currentVendor?.vendor_longitude);
+
+    if(savedLat!==null&&savedLng!==null){
+
+        vendorMapCenter={
+            latitude:savedLat,
+            longitude:savedLng
+        };
+
+        setVendorSelectedLocation(
+            {
+                latitude:savedLat,
+                longitude:savedLng,
+                address:currentVendor?.vendor_location||currentVendor?.location||"",
+                pincode:currentVendor?.vendor_pincode||""
+            },
+            false
+        );
+    }
+
+    renderVendorNativeMap();
 }
 
 
@@ -5663,23 +5619,19 @@ async function openVendorLocationEditor(){
 
     await initVendorLocationMap();
 
+    window.setTimeout(
+        ()=>{
+            renderVendorNativeMap();
+        },
+        80
+    );
 
-    if(vendorLocationMap){
-
-        window.setTimeout(
-            ()=>{
-                vendorLocationMap.invalidateSize();
-            },
-            100
-        );
-
-        window.setTimeout(
-            ()=>{
-                vendorLocationMap.invalidateSize();
-            },
-            450
-        );
-    }
+    window.setTimeout(
+        ()=>{
+            renderVendorNativeMap();
+        },
+        350
+    );
 
 
     const savedLat =
