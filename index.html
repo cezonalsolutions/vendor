@@ -12,12 +12,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
+    href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"
 >
 <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    crossorigin=""
+    src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
 ></script>
 
 <style>
@@ -708,13 +706,40 @@ button,input{font:inherit} button{cursor:pointer}
 }
 
 #vendorLocationMap{
+    position:relative;
+    z-index:1;
     width:100%;
-    height:300px;
+    height:320px;
+    min-height:320px;
     margin-top:12px;
     overflow:hidden;
     border:1px solid #e2e4e7;
     border-radius:16px;
-    background:#f3f4f5;
+    background:#eef1f3;
+}
+
+#vendorLocationMap .leaflet-container{
+    width:100% !important;
+    height:100% !important;
+}
+
+.vendor-map-pin{
+    width:36px;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    background:#e11d48;
+    border:3px solid #fff;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+
+.vendor-map-pin i{
+    transform:rotate(45deg);
+    color:#fff;
+    font-size:13px;
 }
 
 .vendor-location-selected{
@@ -1404,7 +1429,26 @@ button,input{font:inherit} button{cursor:pointer}
             </button>
         </div>
 
-        <div id="vendorLocationMap"></div>
+        <div id="vendorLocationMap">
+            <div
+                id="vendorMapLoading"
+                style="
+                    position:absolute;
+                    inset:0;
+                    z-index:500;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    background:#eef1f3;
+                    color:#777;
+                    font-size:10px;
+                    font-weight:700;
+                    pointer-events:none;
+                "
+            >
+                Loading map...
+            </div>
+        </div>
 
         <div class="vendor-location-selected">
 
@@ -4962,7 +5006,9 @@ function setVendorSelectedLocation(
                 L.marker(
                     point,
                     {
-                        draggable:true
+                        draggable:true,
+                        icon:
+                            getVendorMapPinIcon()
                     }
                 )
                 .addTo(
@@ -5299,14 +5345,156 @@ async function searchVendorLocation(){
 }
 
 
-function initVendorLocationMap(){
+let vendorLeafletPromise = null;
 
-    if(
-        !window.L
-    ){
+
+function ensureVendorLeaflet(){
+
+    if(window.L){
+        return Promise.resolve(window.L);
+    }
+
+
+    if(vendorLeafletPromise){
+        return vendorLeafletPromise;
+    }
+
+
+    vendorLeafletPromise =
+        new Promise(
+            (resolve,reject)=>{
+
+                if(
+                    !document.querySelector(
+                        'link[data-cezoo-leaflet]'
+                    )
+                ){
+                    const css =
+                        document.createElement(
+                            "link"
+                        );
+
+                    css.rel =
+                        "stylesheet";
+
+                    css.href =
+                        "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+
+                    css.dataset.cezooLeaflet =
+                        "1";
+
+                    document.head.appendChild(
+                        css
+                    );
+                }
+
+
+                const existing =
+                    document.querySelector(
+                        'script[data-cezoo-leaflet]'
+                    );
+
+
+                if(existing){
+
+                    existing.addEventListener(
+                        "load",
+                        ()=>resolve(window.L),
+                        {once:true}
+                    );
+
+                    existing.addEventListener(
+                        "error",
+                        ()=>reject(
+                            new Error(
+                                "Map library failed to load"
+                            )
+                        ),
+                        {once:true}
+                    );
+
+                    return;
+                }
+
+
+                const script =
+                    document.createElement(
+                        "script"
+                    );
+
+                script.src =
+                    "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+
+                script.async =
+                    true;
+
+                script.dataset.cezooLeaflet =
+                    "1";
+
+
+                script.onload =
+                    ()=>{
+
+                        if(window.L){
+                            resolve(window.L);
+                        }else{
+                            reject(
+                                new Error(
+                                    "Map library unavailable"
+                                )
+                            );
+                        }
+                    };
+
+
+                script.onerror =
+                    ()=>reject(
+                        new Error(
+                            "Map library failed to load"
+                        )
+                    );
+
+
+                document.head.appendChild(
+                    script
+                );
+            }
+        );
+
+
+    return vendorLeafletPromise;
+}
+
+
+function getVendorMapPinIcon(){
+
+    return L.divIcon({
+        className:"",
+        html:
+            '<div class="vendor-map-pin">' +
+                '<i class="fa-solid fa-store"></i>' +
+            '</div>',
+        iconSize:[36,36],
+        iconAnchor:[18,36]
+    });
+}
+
+
+async function initVendorLocationMap(){
+
+    try{
+
+        await ensureVendorLeaflet();
+
+    }catch(error){
+
+        console.error(
+            "Leaflet load error:",
+            error
+        );
 
         toast(
-            "Map could not load",
+            "Map could not load. Check internet connection.",
             true
         );
 
@@ -5325,16 +5513,46 @@ function initVendorLocationMap(){
             );
 
 
-        L.tileLayer(
-            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                maxZoom:19,
-                attribution:
-                    "&copy; OpenStreetMap"
-            }
-        )
-        .addTo(
-            vendorLocationMap
+        const vendorTiles =
+            L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    minZoom:2,
+                    maxZoom:19,
+                    crossOrigin:true,
+                    attribution:
+                        "&copy; OpenStreetMap contributors"
+                }
+            )
+            .addTo(
+                vendorLocationMap
+            );
+
+
+        const hideVendorMapLoading =
+            ()=>{
+
+                const loading =
+                    document.getElementById(
+                        "vendorMapLoading"
+                    );
+
+                if(loading){
+                    loading.style.display =
+                        "none";
+                }
+            };
+
+
+        vendorTiles.once(
+            "load",
+            hideVendorMapLoading
+        );
+
+
+        window.setTimeout(
+            hideVendorMapLoading,
+            2500
         );
 
 
@@ -5415,7 +5633,7 @@ function initVendorLocationMap(){
 }
 
 
-function openVendorLocationEditor(){
+async function openVendorLocationEditor(){
 
     if(
         !currentVendor
@@ -5443,7 +5661,25 @@ function openVendorLocationEditor(){
     }
 
 
-    initVendorLocationMap();
+    await initVendorLocationMap();
+
+
+    if(vendorLocationMap){
+
+        window.setTimeout(
+            ()=>{
+                vendorLocationMap.invalidateSize();
+            },
+            100
+        );
+
+        window.setTimeout(
+            ()=>{
+                vendorLocationMap.invalidateSize();
+            },
+            450
+        );
+    }
 
 
     const savedLat =
