@@ -10,6 +10,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+>
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -545,6 +554,259 @@ button,input{font:inherit} button{cursor:pointer}
 .store-status-row #storeStatusText.off{
     color:#c74747;
 }
+
+.profile-location-row{
+    min-height:68px;
+}
+
+.profile-location-copy{
+    min-width:0;
+    flex:1;
+    padding-right:10px;
+}
+
+.profile-location-copy strong{
+    max-width:100%;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+}
+
+.profile-location-coords{
+    margin-top:4px;
+    color:#a0a3a9;
+    font-size:8px;
+    font-weight:650;
+}
+
+.profile-location-edit{
+    flex:0 0 auto;
+    width:34px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid #e1e3e6;
+    border-radius:10px;
+    background:#fff;
+    color:#3f4349;
+    font-size:11px;
+}
+
+.vendor-location-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    background:rgba(20,22,27,.42);
+}
+
+.vendor-location-backdrop.show{
+    display:flex;
+}
+
+.vendor-location-sheet{
+    width:min(620px,100%);
+    max-height:92dvh;
+    overflow:auto;
+    padding:16px 14px calc(18px + env(safe-area-inset-bottom));
+    border-radius:22px 22px 0 0;
+    background:#fff;
+    box-shadow:0 -18px 50px rgba(0,0,0,.18);
+}
+
+.vendor-location-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+}
+
+.vendor-location-head h2{
+    font-size:16px;
+    font-weight:850;
+}
+
+.vendor-location-close{
+    width:34px;
+    height:34px;
+    border:0;
+    border-radius:50%;
+    background:#f1f2f4;
+    color:#555;
+}
+
+.vendor-location-search-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+}
+
+.vendor-location-search-wrap{
+    position:relative;
+}
+
+.vendor-location-search-wrap i{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#9ca0a7;
+    font-size:11px;
+}
+
+.vendor-location-search{
+    width:100%;
+    height:43px;
+    padding:0 12px 0 34px;
+    border:1px solid #dfe1e4;
+    border-radius:12px;
+    outline:none;
+    background:#fff;
+    color:#222;
+    font-size:11px;
+    font-weight:600;
+}
+
+.vendor-location-search:focus{
+    border-color:#aeb2b8;
+}
+
+.vendor-location-search-btn{
+    min-width:72px;
+    height:43px;
+    padding:0 13px;
+    border:0;
+    border-radius:12px;
+    background:#222;
+    color:#fff;
+    font-size:10px;
+    font-weight:800;
+}
+
+.vendor-location-tools{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:9px;
+}
+
+.vendor-location-tool{
+    height:38px;
+    border:1px solid #e1e3e6;
+    border-radius:11px;
+    background:#fff;
+    color:#474b52;
+    font-size:9px;
+    font-weight:750;
+}
+
+.vendor-location-tool i{
+    margin-right:5px;
+}
+
+#vendorLocationMap{
+    width:100%;
+    height:300px;
+    margin-top:12px;
+    overflow:hidden;
+    border:1px solid #e2e4e7;
+    border-radius:16px;
+    background:#f3f4f5;
+}
+
+.vendor-location-selected{
+    margin-top:12px;
+    padding:12px;
+    border:1px solid #e7e8ea;
+    border-radius:14px;
+    background:#f8f9fa;
+}
+
+.vendor-location-selected-label{
+    color:#94989f;
+    font-size:8px;
+    font-weight:800;
+    letter-spacing:.2px;
+}
+
+.vendor-location-address{
+    margin-top:5px;
+    color:#2f3238;
+    font-size:11px;
+    font-weight:750;
+    line-height:1.45;
+}
+
+.vendor-location-meta{
+    margin-top:8px;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+}
+
+.vendor-location-meta-box{
+    padding:8px;
+    border-radius:9px;
+    background:#fff;
+    border:1px solid #e8e9eb;
+}
+
+.vendor-location-meta-box span{
+    display:block;
+    color:#9b9fa5;
+    font-size:7px;
+    font-weight:750;
+}
+
+.vendor-location-meta-box strong{
+    display:block;
+    margin-top:3px;
+    color:#3d4147;
+    font-size:9px;
+    font-weight:800;
+    overflow-wrap:anywhere;
+}
+
+.vendor-location-help{
+    margin-top:8px;
+    color:#969aa1;
+    font-size:8px;
+    line-height:1.4;
+}
+
+.vendor-location-save{
+    width:100%;
+    height:46px;
+    margin-top:12px;
+    border:0;
+    border-radius:12px;
+    background:#202126;
+    color:#fff;
+    font-size:11px;
+    font-weight:850;
+}
+
+.vendor-location-save:disabled{
+    opacity:.55;
+}
+
+@media(max-width:430px){
+    #vendorLocationMap{
+        height:280px;
+    }
+
+    .vendor-location-meta{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .vendor-location-meta-box:first-child{
+        grid-column:1 / -1;
+    }
+}
+
 .logout{width:100%;height:43px;margin-top:17px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#c33;font-size:12px;font-weight:700}
 
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.98);border-top:1px solid #e8e8ea}
@@ -994,8 +1256,21 @@ button,input{font:inherit} button{cursor:pointer}
     <div><span>Mobile Number</span><strong id="profileMobileValue">—</strong></div>
 </div>
 
-<div class="profile-row">
-    <div><span>Vendor Location</span><strong id="profileLocationValue">Not added</strong></div>
+<div class="profile-row profile-location-row">
+    <div class="profile-location-copy">
+        <span>Vendor Location</span>
+        <strong id="profileLocationValue">Not added</strong>
+        <div id="profileLocationCoords" class="profile-location-coords"></div>
+    </div>
+
+    <button
+        id="editVendorLocationBtn"
+        class="profile-location-edit"
+        type="button"
+        aria-label="Edit vendor location"
+    >
+        <i class="fa-solid fa-location-dot"></i>
+    </button>
 </div>
 
 <div class="history-actions">
@@ -1067,6 +1342,114 @@ button,input{font:inherit} button{cursor:pointer}
 
 </nav>
 
+</div>
+
+<div id="vendorLocationBackdrop" class="vendor-location-backdrop">
+    <div class="vendor-location-sheet" role="dialog" aria-modal="true">
+
+        <div class="vendor-location-head">
+            <h2>Store Location</h2>
+
+            <button
+                id="vendorLocationClose"
+                class="vendor-location-close"
+                type="button"
+                aria-label="Close location editor"
+            >
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="vendor-location-search-row">
+
+            <div class="vendor-location-search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    id="vendorLocationSearch"
+                    class="vendor-location-search"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="Search area, street or landmark"
+                >
+            </div>
+
+            <button
+                id="vendorLocationSearchBtn"
+                class="vendor-location-search-btn"
+                type="button"
+            >
+                Search
+            </button>
+        </div>
+
+        <div class="vendor-location-tools">
+
+            <button
+                id="vendorUseCurrentLocation"
+                class="vendor-location-tool"
+                type="button"
+            >
+                <i class="fa-solid fa-location-crosshairs"></i>
+                Current Location
+            </button>
+
+            <button
+                id="vendorOpenGoogleMaps"
+                class="vendor-location-tool"
+                type="button"
+            >
+                <i class="fa-solid fa-map-location-dot"></i>
+                Google Maps
+            </button>
+        </div>
+
+        <div id="vendorLocationMap"></div>
+
+        <div class="vendor-location-selected">
+
+            <div class="vendor-location-selected-label">
+                SELECTED STORE ADDRESS
+            </div>
+
+            <div
+                id="vendorSelectedAddress"
+                class="vendor-location-address"
+            >
+                Search or move the pin to select your store.
+            </div>
+
+            <div class="vendor-location-meta">
+
+                <div class="vendor-location-meta-box">
+                    <span>PINCODE</span>
+                    <strong id="vendorSelectedPincode">—</strong>
+                </div>
+
+                <div class="vendor-location-meta-box">
+                    <span>LATITUDE</span>
+                    <strong id="vendorSelectedLatitude">—</strong>
+                </div>
+
+                <div class="vendor-location-meta-box">
+                    <span>LONGITUDE</span>
+                    <strong id="vendorSelectedLongitude">—</strong>
+                </div>
+            </div>
+
+            <div class="vendor-location-help">
+                Drag the pin to your exact store entrance. The saved latitude and longitude can be used for delivery-distance calculation.
+            </div>
+        </div>
+
+        <button
+            id="saveVendorLocationBtn"
+            class="vendor-location-save"
+            type="button"
+        >
+            Save Address
+        </button>
+    </div>
 </div>
 
 <div id="historySheetBackdrop" class="history-sheet-backdrop">
@@ -1575,6 +1958,30 @@ document.getElementById("vendorProductSearchClear");
 
 const storeStatusSwitch =
 document.getElementById("storeStatusSwitch");
+
+const editVendorLocationBtn =
+document.getElementById("editVendorLocationBtn");
+
+const vendorLocationBackdrop =
+document.getElementById("vendorLocationBackdrop");
+
+const vendorLocationClose =
+document.getElementById("vendorLocationClose");
+
+const vendorLocationSearch =
+document.getElementById("vendorLocationSearch");
+
+const vendorLocationSearchBtn =
+document.getElementById("vendorLocationSearchBtn");
+
+const vendorUseCurrentLocation =
+document.getElementById("vendorUseCurrentLocation");
+
+const vendorOpenGoogleMaps =
+document.getElementById("vendorOpenGoogleMaps");
+
+const saveVendorLocationBtn =
+document.getElementById("saveVendorLocationBtn");
 
 
 mobile.addEventListener(
@@ -4414,6 +4821,1065 @@ function getOrderTrackingStart(){
 }
 
 /* ===========================
+   VENDOR LOCATION EDITOR
+=========================== */
+
+let vendorLocationMap =
+    null;
+
+let vendorLocationMarker =
+    null;
+
+let vendorSelectedLocation = {
+    address:"",
+    pincode:"",
+    latitude:null,
+    longitude:null
+};
+
+
+function normalizeCoordinate(
+    value
+){
+
+    const number =
+        Number(value);
+
+    return Number.isFinite(number)
+        ? number
+        : null;
+}
+
+
+function setVendorSelectedLocation(
+    {
+        latitude,
+        longitude,
+        address="",
+        pincode=""
+    },
+    moveMap=true
+){
+
+    const lat =
+        normalizeCoordinate(
+            latitude
+        );
+
+    const lng =
+        normalizeCoordinate(
+            longitude
+        );
+
+
+    if(
+        lat === null ||
+        lng === null
+    ){
+        return;
+    }
+
+
+    vendorSelectedLocation = {
+        address:
+            String(
+                address || ""
+            ).trim(),
+        pincode:
+            String(
+                pincode || ""
+            ).trim(),
+        latitude:
+            lat,
+        longitude:
+            lng
+    };
+
+
+    const addressElement =
+        document.getElementById(
+            "vendorSelectedAddress"
+        );
+
+    const pincodeElement =
+        document.getElementById(
+            "vendorSelectedPincode"
+        );
+
+    const latitudeElement =
+        document.getElementById(
+            "vendorSelectedLatitude"
+        );
+
+    const longitudeElement =
+        document.getElementById(
+            "vendorSelectedLongitude"
+        );
+
+
+    if(addressElement){
+
+        addressElement.textContent =
+            vendorSelectedLocation.address ||
+            "Move the pin to your exact store location.";
+    }
+
+
+    if(pincodeElement){
+
+        pincodeElement.textContent =
+            vendorSelectedLocation.pincode ||
+            "—";
+    }
+
+
+    if(latitudeElement){
+
+        latitudeElement.textContent =
+            lat.toFixed(6);
+    }
+
+
+    if(longitudeElement){
+
+        longitudeElement.textContent =
+            lng.toFixed(6);
+    }
+
+
+    if(
+        vendorLocationMap &&
+        window.L
+    ){
+
+        const point =
+            [lat,lng];
+
+
+        if(!vendorLocationMarker){
+
+            vendorLocationMarker =
+                L.marker(
+                    point,
+                    {
+                        draggable:true
+                    }
+                )
+                .addTo(
+                    vendorLocationMap
+                );
+
+
+            vendorLocationMarker.on(
+                "dragend",
+                async event=>{
+
+                    const position =
+                        event.target
+                            .getLatLng();
+
+
+                    await reverseVendorLocation(
+                        position.lat,
+                        position.lng
+                    );
+                }
+            );
+
+        }else{
+
+            vendorLocationMarker.setLatLng(
+                point
+            );
+        }
+
+
+        if(moveMap){
+
+            vendorLocationMap.setView(
+                point,
+                Math.max(
+                    vendorLocationMap.getZoom(),
+                    17
+                )
+            );
+        }
+    }
+
+}
+
+
+function extractPincodeFromNominatim(
+    result
+){
+
+    return String(
+        result?.address?.postcode ||
+        ""
+    ).trim();
+}
+
+
+function buildFallbackAddress(
+    result
+){
+
+    if(result?.display_name){
+        return String(
+            result.display_name
+        ).trim();
+    }
+
+
+    const address =
+        result?.address ||
+        {};
+
+
+    return [
+        address.road,
+        address.suburb,
+        address.neighbourhood,
+        address.city,
+        address.town,
+        address.village,
+        address.state,
+        address.postcode,
+        address.country
+    ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+
+async function reverseVendorLocation(
+    latitude,
+    longitude
+){
+
+    setVendorSelectedLocation(
+        {
+            latitude,
+            longitude,
+            address:
+                vendorSelectedLocation.address,
+            pincode:
+                vendorSelectedLocation.pincode
+        },
+        false
+    );
+
+
+    try{
+
+        const url =
+            "https://nominatim.openstreetmap.org/reverse"
+            +
+            "?format=jsonv2"
+            +
+            "&lat="
+            +
+            encodeURIComponent(
+                latitude
+            )
+            +
+            "&lon="
+            +
+            encodeURIComponent(
+                longitude
+            )
+            +
+            "&addressdetails=1";
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    headers:{
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if(!response.ok){
+            throw new Error(
+                "Address lookup failed"
+            );
+        }
+
+
+        const result =
+            await response.json();
+
+
+        setVendorSelectedLocation(
+            {
+                latitude,
+                longitude,
+                address:
+                    buildFallbackAddress(
+                        result
+                    ),
+                pincode:
+                    extractPincodeFromNominatim(
+                        result
+                    )
+            },
+            false
+        );
+
+
+    }catch(error){
+
+        console.warn(
+            "Vendor reverse geocode:",
+            error
+        );
+
+
+        setVendorSelectedLocation(
+            {
+                latitude,
+                longitude,
+                address:
+                    vendorSelectedLocation.address ||
+                    `${Number(latitude).toFixed(6)}, ${Number(longitude).toFixed(6)}`,
+                pincode:
+                    vendorSelectedLocation.pincode
+            },
+            false
+        );
+    }
+
+}
+
+
+async function searchVendorLocation(){
+
+    const query =
+        String(
+            vendorLocationSearch
+                ?.value ||
+            ""
+        ).trim();
+
+
+    if(!query){
+
+        toast(
+            "Enter an area or street",
+            true
+        );
+
+        return;
+    }
+
+
+    vendorLocationSearchBtn.disabled =
+        true;
+
+    vendorLocationSearchBtn.textContent =
+        "Searching...";
+
+
+    try{
+
+        const url =
+            "https://nominatim.openstreetmap.org/search"
+            +
+            "?format=jsonv2"
+            +
+            "&limit=1"
+            +
+            "&addressdetails=1"
+            +
+            "&countrycodes=in"
+            +
+            "&q="
+            +
+            encodeURIComponent(
+                query
+            );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    headers:{
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if(!response.ok){
+            throw new Error(
+                "Location search failed"
+            );
+        }
+
+
+        const results =
+            await response.json();
+
+
+        if(
+            !Array.isArray(results) ||
+            !results.length
+        ){
+
+            toast(
+                "Location not found",
+                true
+            );
+
+            return;
+        }
+
+
+        const result =
+            results[0];
+
+
+        const latitude =
+            Number(
+                result.lat
+            );
+
+        const longitude =
+            Number(
+                result.lon
+            );
+
+
+        setVendorSelectedLocation(
+            {
+                latitude,
+                longitude,
+                address:
+                    buildFallbackAddress(
+                        result
+                    ),
+                pincode:
+                    extractPincodeFromNominatim(
+                        result
+                    )
+            },
+            true
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "Vendor location search:",
+            error
+        );
+
+        toast(
+            error?.message ||
+            "Could not search location",
+            true
+        );
+
+    }finally{
+
+        vendorLocationSearchBtn.disabled =
+            false;
+
+        vendorLocationSearchBtn.textContent =
+            "Search";
+    }
+
+}
+
+
+function initVendorLocationMap(){
+
+    if(
+        !window.L
+    ){
+
+        toast(
+            "Map could not load",
+            true
+        );
+
+        return;
+    }
+
+
+    if(!vendorLocationMap){
+
+        vendorLocationMap =
+            L.map(
+                "vendorLocationMap",
+                {
+                    zoomControl:true
+                }
+            );
+
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom:19,
+                attribution:
+                    "&copy; OpenStreetMap"
+            }
+        )
+        .addTo(
+            vendorLocationMap
+        );
+
+
+        vendorLocationMap.on(
+            "click",
+            async event=>{
+
+                await reverseVendorLocation(
+                    event.latlng.lat,
+                    event.latlng.lng
+                );
+
+
+                setVendorSelectedLocation(
+                    vendorSelectedLocation,
+                    false
+                );
+            }
+        );
+    }
+
+
+    const savedLat =
+        normalizeCoordinate(
+            currentVendor
+                ?.vendor_latitude
+        );
+
+    const savedLng =
+        normalizeCoordinate(
+            currentVendor
+                ?.vendor_longitude
+        );
+
+
+    if(
+        savedLat !== null &&
+        savedLng !== null
+    ){
+
+        setVendorSelectedLocation(
+            {
+                latitude:
+                    savedLat,
+                longitude:
+                    savedLng,
+                address:
+                    currentVendor
+                        ?.vendor_location ||
+                    currentVendor
+                        ?.location ||
+                    "",
+                pincode:
+                    currentVendor
+                        ?.vendor_pincode ||
+                    ""
+            },
+            true
+        );
+
+    }else{
+
+        vendorLocationMap.setView(
+            [20.5937,78.9629],
+            5
+        );
+    }
+
+
+    window.setTimeout(
+        ()=>{
+            vendorLocationMap
+                ?.invalidateSize();
+        },
+        120
+    );
+
+}
+
+
+function openVendorLocationEditor(){
+
+    if(
+        !currentVendor
+    ){
+        return;
+    }
+
+
+    vendorLocationBackdrop
+        ?.classList.add(
+            "show"
+        );
+
+
+    document.body.style.overflow =
+        "hidden";
+
+
+    if(vendorLocationSearch){
+
+        vendorLocationSearch.value =
+            currentVendor.vendor_location ||
+            currentVendor.location ||
+            "";
+    }
+
+
+    initVendorLocationMap();
+
+
+    const savedLat =
+        normalizeCoordinate(
+            currentVendor.vendor_latitude
+        );
+
+    const savedLng =
+        normalizeCoordinate(
+            currentVendor.vendor_longitude
+        );
+
+
+    /*
+     * If no exact coordinates are stored yet,
+     * ask the browser for the current GPS position.
+     */
+    if(
+        savedLat === null ||
+        savedLng === null
+    ){
+
+        useVendorCurrentLocation(
+            false
+        );
+    }
+
+}
+
+
+function closeVendorLocationEditor(){
+
+    vendorLocationBackdrop
+        ?.classList.remove(
+            "show"
+        );
+
+
+    document.body.style.overflow =
+        "";
+}
+
+
+function useVendorCurrentLocation(
+    showError=true
+){
+
+    if(
+        !navigator.geolocation
+    ){
+
+        if(showError){
+
+            toast(
+                "Location permission is unavailable",
+                true
+            );
+        }
+
+        return;
+    }
+
+
+    vendorUseCurrentLocation.disabled =
+        true;
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        async position=>{
+
+            const latitude =
+                position.coords.latitude;
+
+            const longitude =
+                position.coords.longitude;
+
+
+            setVendorSelectedLocation(
+                {
+                    latitude,
+                    longitude,
+                    address:"",
+                    pincode:""
+                },
+                true
+            );
+
+
+            await reverseVendorLocation(
+                latitude,
+                longitude
+            );
+
+
+            setVendorSelectedLocation(
+                vendorSelectedLocation,
+                false
+            );
+
+
+            vendorUseCurrentLocation.disabled =
+                false;
+        },
+
+        error=>{
+
+            vendorUseCurrentLocation.disabled =
+                false;
+
+
+            if(showError){
+
+                toast(
+                    "Allow location permission or search manually",
+                    true
+                );
+            }
+
+
+            console.warn(
+                "Vendor geolocation:",
+                error
+            );
+        },
+
+        {
+            enableHighAccuracy:true,
+            timeout:12000,
+            maximumAge:15000
+        }
+    );
+
+}
+
+
+function openVendorGoogleMaps(){
+
+    const latitude =
+        normalizeCoordinate(
+            vendorSelectedLocation
+                .latitude
+        );
+
+    const longitude =
+        normalizeCoordinate(
+            vendorSelectedLocation
+                .longitude
+        );
+
+
+    let url =
+        "https://www.google.com/maps";
+
+
+    if(
+        latitude !== null &&
+        longitude !== null
+    ){
+
+        url =
+            "https://www.google.com/maps/search/?api=1&query="
+            +
+            encodeURIComponent(
+                `${latitude},${longitude}`
+            );
+
+    }else if(
+        vendorLocationSearch
+            ?.value
+            ?.trim()
+    ){
+
+        url =
+            "https://www.google.com/maps/search/?api=1&query="
+            +
+            encodeURIComponent(
+                vendorLocationSearch.value.trim()
+            );
+    }
+
+
+    window.open(
+        url,
+        "_blank",
+        "noopener"
+    );
+
+}
+
+
+async function saveVendorLocation(){
+
+    if(
+        !currentVendor ||
+        !currentVendor.id
+    ){
+        return;
+    }
+
+
+    const latitude =
+        normalizeCoordinate(
+            vendorSelectedLocation
+                .latitude
+        );
+
+    const longitude =
+        normalizeCoordinate(
+            vendorSelectedLocation
+                .longitude
+        );
+
+
+    if(
+        latitude === null ||
+        longitude === null
+    ){
+
+        toast(
+            "Select your exact store location",
+            true
+        );
+
+        return;
+    }
+
+
+    const address =
+        String(
+            vendorSelectedLocation
+                .address ||
+            vendorLocationSearch
+                ?.value ||
+            ""
+        ).trim();
+
+
+    if(!address){
+
+        toast(
+            "Select or search an address",
+            true
+        );
+
+        return;
+    }
+
+
+    saveVendorLocationBtn.disabled =
+        true;
+
+    const oldHtml =
+        saveVendorLocationBtn.innerHTML;
+
+
+    saveVendorLocationBtn.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Saving';
+
+
+    try{
+
+        const updates = {
+            vendor_location:
+                address,
+            vendor_latitude:
+                latitude,
+            vendor_longitude:
+                longitude,
+            vendor_pincode:
+                String(
+                    vendorSelectedLocation
+                        .pincode ||
+                    ""
+                ).trim()
+        };
+
+
+        const {
+            data,
+            error
+        } =
+            await sb
+                .from(
+                    "vendor_login"
+                )
+                .update(
+                    updates
+                )
+                .eq(
+                    "id",
+                    currentVendor.id
+                )
+                .select("*")
+                .maybeSingle();
+
+
+        if(error){
+            throw error;
+        }
+
+
+        if(!data){
+
+            throw new Error(
+                "Vendor location was not updated"
+            );
+        }
+
+
+        currentVendor = {
+            ...currentVendor,
+            ...data
+        };
+
+
+        setProfile(
+            currentVendor
+        );
+
+
+        closeVendorLocationEditor();
+
+
+        toast(
+            "Store location saved"
+        );
+
+
+    }catch(error){
+
+        console.error(
+            "Vendor location save:",
+            error
+        );
+
+
+        toast(
+            error?.message ||
+            "Could not save location",
+            true
+        );
+
+    }finally{
+
+        saveVendorLocationBtn.disabled =
+            false;
+
+        saveVendorLocationBtn.innerHTML =
+            oldHtml;
+    }
+
+}
+
+
+editVendorLocationBtn
+    ?.addEventListener(
+        "click",
+        openVendorLocationEditor
+    );
+
+
+vendorLocationClose
+    ?.addEventListener(
+        "click",
+        closeVendorLocationEditor
+    );
+
+
+vendorLocationBackdrop
+    ?.addEventListener(
+        "click",
+        event=>{
+
+            if(
+                event.target ===
+                vendorLocationBackdrop
+            ){
+
+                closeVendorLocationEditor();
+            }
+        }
+    );
+
+
+vendorLocationSearchBtn
+    ?.addEventListener(
+        "click",
+        searchVendorLocation
+    );
+
+
+vendorLocationSearch
+    ?.addEventListener(
+        "keydown",
+        event=>{
+
+            if(
+                event.key ===
+                "Enter"
+            ){
+
+                event.preventDefault();
+
+                searchVendorLocation();
+            }
+        }
+    );
+
+
+vendorUseCurrentLocation
+    ?.addEventListener(
+        "click",
+        ()=>{
+            useVendorCurrentLocation(
+                true
+            );
+        }
+    );
+
+
+vendorOpenGoogleMaps
+    ?.addEventListener(
+        "click",
+        openVendorGoogleMaps
+    );
+
+
+saveVendorLocationBtn
+    ?.addEventListener(
+        "click",
+        saveVendorLocation
+    );
+
+
+/* ===========================
    PROFILE
 =========================== */
 
@@ -4464,6 +5930,49 @@ function setProfile(
         vendor.location ||
 
         "Not added";
+
+
+    const profileLocationCoords =
+        document.getElementById(
+            "profileLocationCoords"
+        );
+
+
+    if(profileLocationCoords){
+
+        const latitude =
+            normalizeCoordinate(
+                vendor.vendor_latitude
+            );
+
+        const longitude =
+            normalizeCoordinate(
+                vendor.vendor_longitude
+            );
+
+        const pincode =
+            String(
+                vendor.vendor_pincode ||
+                ""
+            ).trim();
+
+
+        profileLocationCoords.textContent =
+
+            latitude !== null &&
+            longitude !== null
+
+            ? [
+                pincode
+                    ? `PIN ${pincode}`
+                    : "",
+                `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
+              ]
+              .filter(Boolean)
+              .join(" • ")
+
+            : "";
+    }
 
 
     const open =
