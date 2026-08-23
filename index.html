@@ -764,6 +764,18 @@ button,input{font:inherit} button{cursor:pointer}
     font-weight:900;
 }
 
+
+.product-price-value{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:2px;
+}
+
+.product-info .product-telugu + .product-telugu{
+    margin-top:4px;
+}
+
 </style>
 </head>
 
@@ -2219,9 +2231,235 @@ function firstExistingKey(
 }
 
 
+
+/* =========================================================
+   EXACT CEZOO TABLE DISPLAY FIELDS
+
+   FOOD:
+   product_name, item_name, short_description,
+   original_price, discount_price
+
+   ICE CREAM:
+   name, name_telugu, original_price, discount_price,
+   quantity, unit, image1
+
+   Cakes and groceries keep their existing working logic.
+========================================================= */
+
+function isFoodProductTable(table){
+    const t = normalizeTable(table);
+    return (
+        t === "food_items" ||
+        t === "restaurant_food_items"
+    );
+}
+
+function isIceCreamProductTable(table){
+    return normalizeTable(table) === "icecreams";
+}
+
+function getVendorDisplayName(product){
+    const table = normalizeTable(product?.product_table);
+
+    if(isFoodProductTable(table)){
+        return String(
+            product?.product_name ||
+            product?.item_name ||
+            `Product ${product?.id ?? ""}`
+        ).trim();
+    }
+
+    if(isIceCreamProductTable(table)){
+        return String(
+            product?.name ||
+            `Product ${product?.id ?? ""}`
+        ).trim();
+    }
+
+    return String(
+        product?.name ||
+        product?.product_name ||
+        product?.item_name ||
+        product?.food_name ||
+        product?.dish_name ||
+        product?.restaurant_item_name ||
+        product?.cake_name ||
+        product?.title ||
+        `Product ${product?.id ?? ""}`
+    ).trim();
+}
+
+function getVendorSecondaryName(product){
+    const table = normalizeTable(product?.product_table);
+
+    if(isFoodProductTable(table)){
+        const productName = String(product?.product_name || "").trim();
+        const itemName = String(product?.item_name || "").trim();
+
+        if(
+            itemName &&
+            itemName.toLowerCase() !== productName.toLowerCase()
+        ){
+            return itemName;
+        }
+    }
+
+    return "";
+}
+
+function getVendorShortDescription(product){
+    const table = normalizeTable(product?.product_table);
+
+    if(isFoodProductTable(table)){
+        return String(
+            product?.short_description || ""
+        ).trim();
+    }
+
+    return String(
+        product?.short_description ||
+        product?.description ||
+        product?.sub_txt ||
+        ""
+    ).trim();
+}
+
+function getVendorOriginalPrice(product){
+    const value = Number(product?.original_price);
+    return Number.isFinite(value) ? value : null;
+}
+
+function getVendorDiscountPrice(product){
+    const value = Number(product?.discount_price);
+    return Number.isFinite(value) ? value : null;
+}
+
+function getVendorIceCreamTeluguName(product){
+    if(!isIceCreamProductTable(product?.product_table)){
+        return "";
+    }
+
+    return String(
+        product?.name_telugu || ""
+    ).trim();
+}
+
+function getVendorIceCreamQuantity(product){
+    if(!isIceCreamProductTable(product?.product_table)){
+        return null;
+    }
+
+    return product?.quantity ?? "";
+}
+
+function getVendorIceCreamUnit(product){
+    if(!isIceCreamProductTable(product?.product_table)){
+        return null;
+    }
+
+    return product?.unit ?? "";
+}
+
+function getVendorOrderDisplayName(item, product){
+    const table = getProductTable(item);
+
+    if(isFoodProductTable(table)){
+        return String(
+            item?.product_name ||
+            product?.product_name ||
+            item?.item_name ||
+            product?.item_name ||
+            `Product ${getProductId(item) || ""}`
+        ).trim();
+    }
+
+    if(isIceCreamProductTable(table)){
+        return String(
+            item?.name ||
+            item?.product_name ||
+            product?.name ||
+            `Product ${getProductId(item) || ""}`
+        ).trim();
+    }
+
+    return getProductName(item, product);
+}
+
+function getVendorOrderExtraText(item, product){
+    const table = getProductTable(item);
+
+    if(isFoodProductTable(table)){
+        const parts = [];
+
+        const itemName = String(
+            item?.item_name ||
+            product?.item_name ||
+            ""
+        ).trim();
+
+        const productName = String(
+            item?.product_name ||
+            product?.product_name ||
+            ""
+        ).trim();
+
+        if(
+            itemName &&
+            itemName.toLowerCase() !== productName.toLowerCase()
+        ){
+            parts.push(itemName);
+        }
+
+        const shortDescription = String(
+            item?.short_description ||
+            product?.short_description ||
+            ""
+        ).trim();
+
+        if(shortDescription){
+            parts.push(shortDescription);
+        }
+
+        return parts.join(" • ");
+    }
+
+    if(isIceCreamProductTable(table)){
+        const qty =
+            item?.quantity ??
+            product?.quantity ??
+            "";
+
+        const unit =
+            item?.unit ??
+            product?.unit ??
+            "";
+
+        return [qty, unit]
+            .filter(value =>
+                value !== null &&
+                value !== undefined &&
+                String(value).trim() !== ""
+            )
+            .join(" ");
+    }
+
+    return "";
+}
+
+
 function getProductTeluguName(
     product
 ){
+
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        return String(
+            product?.name_telugu || ""
+        ).trim();
+    }
 
     const key =
         firstExistingKey(
@@ -2246,13 +2484,23 @@ function getProductQuantityValue(
     product
 ){
 
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        return product?.quantity ?? "";
+    }
+
     const key =
         firstExistingKey(
             product,
             [
                 "quantity",
+                "product_quantity",
                 "qty",
                 "weight",
+                "net_weight",
                 "size",
                 "pack_size",
                 "volume"
@@ -2267,14 +2515,24 @@ function getProductUnitValue(
     product
 ){
 
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        return product?.unit ?? "";
+    }
+
     const key =
         firstExistingKey(
             product,
             [
                 "unit",
+                "product_unit",
                 "units",
                 "quantity_unit",
                 "weight_unit",
+                "measurement_unit",
                 "uom"
             ]
         );
@@ -2284,6 +2542,25 @@ function getProductUnitValue(
 
 
 function getEditablePriceKey(product){
+
+    const table =
+        normalizeTable(
+            product?.product_table
+        );
+
+    if(
+        isFoodProductTable(table) ||
+        isIceCreamProductTable(table)
+    ){
+        return firstExistingKey(
+            product,
+            [
+                "discount_price",
+                "original_price"
+            ]
+        );
+    }
+
     return firstExistingKey(
         product,
         [
@@ -2301,15 +2578,24 @@ function getEditablePriceKey(product){
 
 
 function getEditableQuantityKey(product){
-    /*
-      cakes are special: cake size/weight lives inside prices JSON,
-      not one quantity column. Do not pretend cake_weight exists in
-      the cakes product row.
-    */
+
     if(
         String(product?.product_table || "") === "cakes"
     ){
         return null;
+    }
+
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        return Object.prototype.hasOwnProperty.call(
+            product,
+            "quantity"
+        )
+            ? "quantity"
+            : null;
     }
 
     return firstExistingKey(
@@ -2343,10 +2629,24 @@ function getEditableQuantityKey(product){
 
 
 function getEditableUnitKey(product){
+
     if(
         String(product?.product_table || "") === "cakes"
     ){
         return null;
+    }
+
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        return Object.prototype.hasOwnProperty.call(
+            product,
+            "unit"
+        )
+            ? "unit"
+            : null;
     }
 
     return firstExistingKey(
@@ -2412,6 +2712,21 @@ function vendorFirstImage(value){
 
 
 function getVendorProductImage(product){
+
+    if(
+        isIceCreamProductTable(
+            product?.product_table
+        )
+    ){
+        const exactIcecreamImage =
+            vendorFirstImage(
+                product?.image1
+            );
+
+        if(exactIcecreamImage){
+            return exactIcecreamImage;
+        }
+    }
 
     const direct = [
         product?.image1,
@@ -5239,7 +5554,13 @@ function renderOrders(){
                                 );
 
                             const name =
-                                getProductName(
+                                getVendorOrderDisplayName(
+                                    item,
+                                    product
+                                );
+
+                            const exactExtraText =
+                                getVendorOrderExtraText(
                                     item,
                                     product
                                 );
@@ -5276,13 +5597,41 @@ function renderOrders(){
                                     : "";
 
                             if(!packText){
-                                packText =
-                                    getVendorProductPackText(
-                                        item
-                                    ) ||
-                                    getVendorProductPackText(
-                                        product
-                                    );
+
+                                if(exactExtraText){
+                                    packText =
+                                        exactExtraText;
+                                }else{
+
+                                    const orderProductTable =
+                                        getProductTable(
+                                            item
+                                        );
+
+                                    if(
+                                        orderProductTable ===
+                                            "cezoogroceries"
+                                        ||
+                                        orderProductTable ===
+                                            "fresh_products"
+                                    ){
+                                        packText =
+                                            getVendorProductPackText(
+                                                product
+                                            ) ||
+                                            getVendorProductPackText(
+                                                item
+                                            );
+                                    }else{
+                                        packText =
+                                            getVendorProductPackText(
+                                                item
+                                            ) ||
+                                            getVendorProductPackText(
+                                                product
+                                            );
+                                    }
+                                }
                             }
 
                             const lineTotal =
@@ -6457,16 +6806,14 @@ function renderProducts(){
 
 
                 const name =
-                    product.name ||
-                    product.product_name ||
-                    product.item_name ||
-                    product.food_name ||
-                    product.dish_name ||
-                    product.restaurant_item_name ||
-                    product.cake_name ||
-                    product.name ||
-                    product.title ||
-                    `Product ${product.id}`;
+                    getVendorDisplayName(
+                        product
+                    );
+
+                const secondaryName =
+                    getVendorSecondaryName(
+                        product
+                    );
 
 
                 const teluguName =
@@ -6475,12 +6822,29 @@ function renderProducts(){
                     );
 
                 const shortDescription =
-                    String(
-                        product.short_description ||
-                        product.description ||
-                        product.sub_txt ||
-                        ""
-                    ).trim();
+                    getVendorShortDescription(
+                        product
+                    );
+
+                const originalPrice =
+                    getVendorOriginalPrice(
+                        product
+                    );
+
+                const discountPrice =
+                    getVendorDiscountPrice(
+                        product
+                    );
+
+                const isExactFood =
+                    isFoodProductTable(
+                        product.product_table
+                    );
+
+                const isExactIceCream =
+                    isIceCreamProductTable(
+                        product.product_table
+                    );
 
 
                 const image =
@@ -6590,6 +6954,16 @@ function renderProducts(){
 
 
                             ${
+                                secondaryName
+                                ? `
+                                    <div class="product-telugu">
+                                        ${escapeHTML(secondaryName)}
+                                    </div>
+                                `
+                                : ""
+                            }
+
+                            ${
                                 teluguName
                                 ? `
                                     <div class="product-telugu">
@@ -6679,9 +7053,39 @@ function renderProducts(){
                                     class="product-price-value"
                                     id="priceText_${domKey}"
                                 >
-                                    ₹${Number.isFinite(price)
-                                        ? price.toFixed(2)
-                                        : "0.00"}
+                                    ${
+                                        (
+                                            isExactFood ||
+                                            isExactIceCream
+                                        )
+                                        ? `
+                                            ${
+                                                originalPrice !== null
+                                                ? `
+                                                    <span style="color:#999;text-decoration:line-through;margin-right:6px">
+                                                        ₹${originalPrice.toFixed(2)}
+                                                    </span>
+                                                `
+                                                : ""
+                                            }
+                                            <span>
+                                                ₹${(
+                                                    discountPrice !== null
+                                                        ? discountPrice
+                                                        : (
+                                                            Number.isFinite(price)
+                                                                ? price
+                                                                : 0
+                                                          )
+                                                ).toFixed(2)}
+                                            </span>
+                                        `
+                                        : `
+                                            ₹${Number.isFinite(price)
+                                                ? price.toFixed(2)
+                                                : "0.00"}
+                                        `
+                                    }
                                 </div>
 
 
