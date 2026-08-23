@@ -531,6 +531,20 @@ button,input{font:inherit} button{cursor:pointer}
 .profile-row{min-height:57px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #eee}
 .profile-row span{color:#999;font-size:10px}
 .profile-row strong{display:block;margin-top:3px;font-size:10px}
+.store-status-row{
+    min-height:64px;
+}
+.store-status-row #storeStatusText{
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.2px;
+}
+.store-status-row #storeStatusText.on{
+    color:#198754;
+}
+.store-status-row #storeStatusText.off{
+    color:#c74747;
+}
 .logout{width:100%;height:43px;margin-top:17px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#c33;font-size:12px;font-weight:700}
 
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.98);border-top:1px solid #e8e8ea}
@@ -960,6 +974,18 @@ button,input{font:inherit} button{cursor:pointer}
 
 <div style="height:18px"></div>
 
+<div class="profile-row store-status-row">
+    <div>
+        <span>Store Status</span>
+        <strong id="storeStatusText">OFF</strong>
+    </div>
+
+    <label class="switch" aria-label="Store status">
+        <input id="storeStatusSwitch" type="checkbox">
+        <span class="slider"></span>
+    </label>
+</div>
+
 <div class="profile-row">
     <div><span>Vendor Name</span><strong id="profileNameValue">—</strong></div>
 </div>
@@ -970,18 +996,6 @@ button,input{font:inherit} button{cursor:pointer}
 
 <div class="profile-row">
     <div><span>Vendor Location</span><strong id="profileLocationValue">Not added</strong></div>
-</div>
-
-<div class="profile-row">
-    <div>
-        <span>Store availability</span>
-        <strong id="storeStatusText">Closed</strong>
-    </div>
-
-    <label class="switch">
-        <input id="storeStatusSwitch" type="checkbox">
-        <span class="slider"></span>
-    </label>
 </div>
 
 <div class="history-actions">
@@ -4465,12 +4479,28 @@ function setProfile(
         open;
 
 
-    document.getElementById(
-        "storeStatusText"
-    ).textContent =
-        open
-        ? "Open"
-        : "Closed";
+    const storeStatusText =
+        document.getElementById(
+            "storeStatusText"
+        );
+
+    if(storeStatusText){
+
+        storeStatusText.textContent =
+            open
+            ? "ON"
+            : "OFF";
+
+        storeStatusText.classList.toggle(
+            "on",
+            open
+        );
+
+        storeStatusText.classList.toggle(
+            "off",
+            !open
+        );
+    }
 
 }
 
@@ -4529,12 +4559,28 @@ async () => {
             : "closed";
 
 
-        document.getElementById(
-            "storeStatusText"
-        ).textContent =
-            open
-            ? "Open"
-            : "Closed";
+        const storeStatusText =
+            document.getElementById(
+                "storeStatusText"
+            );
+
+        if(storeStatusText){
+
+            storeStatusText.textContent =
+                open
+                ? "ON"
+                : "OFF";
+
+            storeStatusText.classList.toggle(
+                "on",
+                open
+            );
+
+            storeStatusText.classList.toggle(
+                "off",
+                !open
+            );
+        }
 
 
         toast(
