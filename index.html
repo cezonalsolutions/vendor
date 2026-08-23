@@ -817,7 +817,7 @@ button,input{font:inherit} button{cursor:pointer}
 
 .logout{width:100%;height:43px;margin-top:17px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#c33;font-size:12px;font-weight:700}
 
-.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:grid;grid-template-columns:repeat(4,1fr);padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.98);border-top:1px solid #e8e8ea}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:100;display:grid;grid-template-columns:repeat(5,1fr);padding:6px 5px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.98);border-top:1px solid #e8e8ea}
 .nav-btn{height:55px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#a0a0a5}
 .nav-btn i{font-size:16px}
 .nav-btn span{font-size:8px;font-weight:600}
@@ -1120,6 +1120,10 @@ button,input{font:inherit} button{cursor:pointer}
     margin-top:4px;
 }
 
+
+/* LIVE PACKED ORDERS */
+.packed-live-page{padding-top:30px}.packed-live-list{display:flex;flex-direction:column;gap:10px}.packed-live-card{padding:13px;background:#fff;border:1px solid #e7e8ea;border-radius:15px}.packed-live-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.packed-live-order{font-size:12px;font-weight:850}.packed-live-time{margin-top:3px;color:#979aa0;font-size:8px}.packed-live-status{flex:0 0 auto;min-height:25px;padding:0 8px;display:inline-flex;align-items:center;border-radius:999px;background:#f1f2f4;color:#50545a;font-size:8px;font-weight:850;text-transform:uppercase}.packed-live-status.on_the_way,.packed-live-status.ontheway{background:#eef5ff;color:#2867b2}.packed-live-status.delivered{background:#edf8f0;color:#198754}.packed-live-status.cancelled,.packed-live-status.canceled{background:#fff0f0;color:#c74747}.packed-live-status.assigned,.packed-live-status.accepted{background:#fff7e8;color:#9a6514}.packed-live-items{margin-top:11px;border-top:1px solid #eeeeef}.packed-live-item{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f1}.packed-live-item:last-child{border-bottom:0}.packed-live-image{width:48px;height:48px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;background:#f5f5f6;color:#aaa;font-size:12px}.packed-live-image img{width:100%;height:100%;object-fit:contain}.packed-live-product{min-width:0}.packed-live-product-name{font-size:10px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}.packed-live-product-meta{margin-top:3px;color:#858990;font-size:8px;font-weight:650}.packed-live-product-total{font-size:10px;font-weight:850;white-space:nowrap}.packed-live-partner{margin-top:10px;padding:10px;border-radius:11px;background:#f7f8f9}.packed-live-partner-label{color:#999da3;font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.25px}.packed-live-partner-name{margin-top:4px;font-size:10px;font-weight:800}.packed-live-partner-mobile{margin-top:2px;color:#70757b;font-size:9px;font-weight:650}.packed-live-empty{min-height:48dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#8f9399}.packed-live-empty i{font-size:23px;margin-bottom:10px}.packed-live-empty strong{color:#34373c;font-size:13px}.packed-live-empty span{margin-top:5px;font-size:9px}.product-edit-grid.icecream-price-grid{grid-template-columns:1fr 1fr 1fr 1fr auto}@media(max-width:520px){.product-edit-grid.icecream-price-grid{grid-template-columns:1fr 1fr}.product-edit-grid.icecream-price-grid .product-save-btn{grid-column:1 / -1}}
+
 </style>
 </head>
 
@@ -1170,6 +1174,15 @@ button,input{font:inherit} button{cursor:pointer}
 <section id="ordersPage" class="app-page active">
     <div id="ordersDisplay">
         <div class="loading-spinner-only"><div class="spinner"></div></div>
+    </div>
+</section>
+
+<section id="packedLivePage" class="app-page">
+    <div class="packed-live-page">
+        <div class="page-title"><h1>Packed Orders</h1><p>Live status of orders packed by this vendor</p></div>
+        <div id="packedLiveDisplay" class="packed-live-list">
+            <div class="packed-live-empty"><i class="fa-solid fa-box"></i><strong>No packed orders yet</strong><span>Packed orders will appear here automatically.</span></div>
+        </div>
     </div>
 </section>
 
@@ -1331,6 +1344,11 @@ button,input{font:inherit} button{cursor:pointer}
 <button class="nav-btn active" data-page="ordersPage" type="button">
     <i class="fa-solid fa-receipt"></i>
     <span>Orders</span>
+</button>
+
+<button class="nav-btn" data-page="packedLivePage" type="button">
+    <i class="fa-solid fa-box-check"></i>
+    <span>Packed</span>
 </button>
 
 <button class="nav-btn" data-page="analyticsPage" type="button">
@@ -1562,6 +1580,8 @@ let channels = [];
 let productChannels = [];
 let analyticsOrders = [];
 let analyticsRefreshPromise = null;
+let packedLiveOrders = [];
+let packedLiveChannels = [];
 
 
 
@@ -4751,6 +4771,10 @@ async function openVendorApp(
     await loadVendorProducts();
 
     await loadAnalyticsOrders();
+
+    await loadPackedLiveOrders();
+    stopPackedLiveRealtime();
+    await startPackedLiveRealtime();
 
     stopProductRealtime();
     await startProductRealtime();
@@ -8558,6 +8582,10 @@ async function(
 
         renderOrders();
 
+        loadPackedLiveOrders().catch(error=>{
+            console.warn("Packed live refresh after pack:",error);
+        });
+
         loadAnalyticsOrders().catch(error=>{
             console.warn(
                 "Analytics refresh after pack:",
@@ -9149,10 +9177,21 @@ function renderProducts(){
                                 id="editForm_${domKey}"
                             >
 
-                                <div class="product-edit-grid">
+                                <div class="product-edit-grid ${isExactIceCream ? "icecream-price-grid" : ""}">
+
+                                    ${
+                                        isExactIceCream
+                                        ? `
+                                    <div class="edit-field">
+                                        <label>ORIGINAL PRICE</label>
+                                        <input id="editOriginalPrice_${domKey}" type="number" step="0.01" inputmode="decimal" value="${escapeHTML(originalPrice !== null ? originalPrice : "")}">
+                                    </div>
+                                        `
+                                        : ""
+                                    }
 
                                     <div class="edit-field">
-                                        <label>PRICE</label>
+                                        <label>${isExactIceCream ? "DISCOUNT PRICE" : "PRICE"}</label>
                                         <input
                                             id="editPrice_${domKey}"
                                             type="number"
@@ -9344,6 +9383,12 @@ async function(
         );
 
 
+    const originalPriceInput =
+        document.getElementById(
+            `editOriginalPrice_${key}`
+        );
+
+
     const qtyInput =
         document.getElementById(
             `editQty_${key}`
@@ -9357,6 +9402,19 @@ async function(
 
 
     const updates = {};
+
+
+    if(
+        isIceCreamProductTable(table) &&
+        originalPriceInput
+    ){
+        const originalPriceValue = Number(originalPriceInput.value);
+        if(!Number.isFinite(originalPriceValue) || originalPriceValue < 0){
+            toast("Enter a valid original price",true);
+            return;
+        }
+        updates.original_price = originalPriceValue;
+    }
 
 
     if(
@@ -9574,10 +9632,14 @@ async function(
 
         if(priceText){
 
-            priceText.textContent =
-                `₹${Number.isFinite(freshPrice)
-                    ? freshPrice.toFixed(2)
-                    : "0.00"}`;
+            if(isIceCreamProductTable(table)){
+                const freshOriginal = Number(product.original_price);
+                const freshDiscount = Number(product.discount_price);
+                priceText.innerHTML =
+                    `${Number.isFinite(freshOriginal) ? `<span style="color:#999;text-decoration:line-through;margin-right:6px">₹${freshOriginal.toFixed(2)}</span>` : ""}<span>₹${Number.isFinite(freshDiscount) ? freshDiscount.toFixed(2) : (Number.isFinite(freshPrice) ? freshPrice.toFixed(2) : "0.00")}</span>`;
+            }else{
+                priceText.textContent = `₹${Number.isFinite(freshPrice) ? freshPrice.toFixed(2) : "0.00"}`;
+            }
 
         }
 
@@ -9818,6 +9880,41 @@ async function(
 };
 
 
+
+/* ===========================
+   LIVE PACKED ORDERS
+=========================== */
+function stopPackedLiveRealtime(){packedLiveChannels.forEach(channel=>{try{sb.removeChannel(channel)}catch(error){}});packedLiveChannels=[]}
+function packedLiveField(row,candidates){for(const key of candidates){const value=row?.[key];if(value!==null&&value!==undefined&&String(value).trim()!=="")return value}return ""}
+function getPackedLiveStatus(row){return String(packedLiveField(row,["delivery_status","order_status","status","delivery_state","current_status"])||"packed").trim().toLowerCase().replace(/\s+/g,"_")}
+function getPackedLivePartnerName(row){return String(packedLiveField(row,["delivery_partner_name","delivery_boy_name","partner_name","rider_name","driver_name","accepted_by_name","delivery_person_name","agent_name"])||"").trim()}
+function getPackedLivePartnerMobile(row){return String(packedLiveField(row,["delivery_partner_mobile","delivery_boy_mobile","partner_mobile","rider_mobile","driver_mobile","accepted_by_mobile","delivery_person_mobile","agent_mobile","delivery_partner_phone","rider_phone","driver_phone"])||"").trim()}
+function getPackedLiveSourceId(row){return String(row?.source_order_id??row?.order_id??row?.order_number??row?.order_no??row?.id??"—")}
+function getPackedLiveItemProduct(item){const table=normalizeTable(getProductTable(item));const id=getProductId(item);if(!table||id===null)return null;return vendorProducts.find(product=>normalizeTable(product.product_table)===table&&String(product.id)===String(id))||null}
+function getPackedLiveItemImage(item,product){return getVendorProductImage(product)||getVendorProductImage(item)||item?.image||item?.image_url||item?.product_image||""}
+function getPackedLiveItemName(item,product){return String(getVendorOrderDisplayName(item,product||{})||getProductName(item,product||{})||"Product")}
+function getPackedLiveItemTotal(item,product){const saved=Number(item?.total_price??item?.line_total??item?.item_total);return Number.isFinite(saved)?saved:getOrderLineTotal(item,product||{})}
+function renderPackedLiveOrders(){
+ const display=document.getElementById("packedLiveDisplay");if(!display)return;
+ if(!packedLiveOrders.length){display.innerHTML=`<div class="packed-live-empty"><i class="fa-solid fa-box"></i><strong>No packed orders yet</strong><span>Packed orders will appear here automatically.</span></div>`;return}
+ display.innerHTML=packedLiveOrders.map(row=>{const items=getOrderItems(row);const status=getPackedLiveStatus(row);const partnerName=getPackedLivePartnerName(row);const partnerMobile=getPackedLivePartnerMobile(row);const packedTime=row.vendor_packed_at||row.packed_at||row.sent_to_delivery_at||row.updated_at||row.created_at;return `<div class="packed-live-card"><div class="packed-live-head"><div><div class="packed-live-order">Order #${escapeHTML(getPackedLiveSourceId(row))}</div><div class="packed-live-time">${escapeHTML(formatHistoryDate(packedTime))}</div></div><div class="packed-live-status ${escapeHTML(status)}">${escapeHTML(status.replaceAll("_"," "))}</div></div><div class="packed-live-items">${items.length?items.map(item=>{const product=getPackedLiveItemProduct(item);const image=getPackedLiveItemImage(item,product);const name=getPackedLiveItemName(item,product);const qty=getQuantity(item);const total=getPackedLiveItemTotal(item,product);return `<div class="packed-live-item"><div class="packed-live-image">${image?`<img src="${escapeHTML(image)}" alt="">`:`<i class="fa-solid fa-box"></i>`}</div><div class="packed-live-product"><div class="packed-live-product-name">${escapeHTML(name)}</div><div class="packed-live-product-meta">Qty ${escapeHTML(qty)}</div></div><div class="packed-live-product-total">₹${Number(total||0).toFixed(2)}</div></div>`}).join(""):`<div class="packed-live-item"><div class="packed-live-image"><i class="fa-solid fa-box"></i></div><div class="packed-live-product"><div class="packed-live-product-name">Packed order</div></div><div class="packed-live-product-total">—</div></div>`}</div><div class="packed-live-partner"><div class="packed-live-partner-label">DELIVERY PARTNER</div><div class="packed-live-partner-name">${partnerName?escapeHTML(partnerName):((status==="assigned"||status==="packed")?"Waiting for delivery partner":"Delivery partner")}</div>${partnerMobile?`<div class="packed-live-partner-mobile">${escapeHTML(partnerMobile)}</div>`:""}</div></div>`}).join("")
+}
+async function loadPackedLiveOrders(){
+ if(!currentVendor?.id){packedLiveOrders=[];renderPackedLiveOrders();return}
+ const all=[];
+ for(const table of ["delivery_cash_orders","delivery_upi_orders"]){
+  let query=sb.from(table).select("*").eq("vendor_id",currentVendor.id).limit(300);
+  const {data,error}=await query;
+  if(error){console.warn("Packed live load:",table,error);continue}
+  (data||[]).forEach(row=>all.push({...row,_packedLiveTable:table}));
+ }
+ all.sort((a,b)=>new Date(b.vendor_packed_at||b.packed_at||b.updated_at||b.created_at||0)-new Date(a.vendor_packed_at||a.packed_at||a.updated_at||a.created_at||0));
+ packedLiveOrders=all;renderPackedLiveOrders();
+}
+function applyPackedLiveRealtimeRow(table,payload){const row=payload.new||payload.old;if(!row)return;const key=`${table}:${String(row.id)}`;if(payload.eventType==="DELETE"){packedLiveOrders=packedLiveOrders.filter(item=>`${item._packedLiveTable}:${String(item.id)}`!==key);renderPackedLiveOrders();return}const prepared={...row,_packedLiveTable:table};const index=packedLiveOrders.findIndex(item=>`${item._packedLiveTable}:${String(item.id)}`===key);if(index>=0)packedLiveOrders[index]={...packedLiveOrders[index],...prepared};else packedLiveOrders.unshift(prepared);packedLiveOrders.sort((a,b)=>new Date(b.vendor_packed_at||b.packed_at||b.updated_at||b.created_at||0)-new Date(a.vendor_packed_at||a.packed_at||a.updated_at||a.created_at||0));renderPackedLiveOrders()}
+async function startPackedLiveRealtime(){stopPackedLiveRealtime();if(!currentVendor?.id)return;for(const table of ["delivery_cash_orders","delivery_upi_orders"]){const channel=sb.channel(`vendor_packed_live_${table}_${currentVendor.id}`).on("postgres_changes",{event:"*",schema:"public",table,filter:`vendor_id=eq.${currentVendor.id}`},payload=>applyPackedLiveRealtimeRow(table,payload));packedLiveChannels.push(channel);channel.subscribe(status=>console.log(`Packed realtime ${table}:`,status))}}
+
+
 /* ===========================
    NAVIGATION
 =========================== */
@@ -9921,6 +10018,10 @@ function openPage(
         updateOrderPager();
     }
 
+    if(pageId === "packedLivePage"){
+        renderPackedLiveOrders();
+    }
+
 
     window.scrollTo({
         top:0,
@@ -9944,6 +10045,7 @@ document
 
     stopRealtime();
     stopProductRealtime();
+    stopPackedLiveRealtime();
 
 
     localStorage.removeItem(
@@ -9968,6 +10070,7 @@ document
 
     vendorOrders = [];
     currentOrderIndex = 0;
+    packedLiveOrders = [];
 
 
     showLoginScreen();
