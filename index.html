@@ -143,6 +143,13 @@ button,input{font:inherit} button{cursor:pointer}
 .order-summary{display:block;padding:15px 2px 0;border-top:1px solid #dedfe2;background:transparent}
 .summary-label{color:#999;font-size:7px;font-weight:700}
 .summary-value{margin-top:3px;font-size:16px;font-weight:800}
+.vendor-bill-title{margin-bottom:8px;color:#777b82;font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.35px}
+.vendor-bill-row{min-height:30px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #f0f0f1;color:#777b82;font-size:10px}
+.vendor-bill-row strong{color:#2c2f34;font-size:10px;font-weight:800}
+.vendor-bill-row:last-of-type{border-bottom:0}
+.vendor-bill-total{margin-top:8px;padding-top:10px;border-top:1px dashed #d9dce0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.vendor-bill-total span{font-size:11px;font-weight:850;color:#202126}
+.vendor-bill-total strong{font-size:17px;font-weight:900;color:#202126}
 .pack-btn{width:100%;height:48px;margin-top:12px;padding:0 16px;border:0;border-radius:11px;background:#202126;color:#fff;font-size:12px;font-weight:800}
 .pack-btn:active{transform:scale(.985)}
 .pack-btn:disabled{opacity:.55}
@@ -7312,6 +7319,262 @@ function updateCounts(){
    ORDER UI
 =========================== */
 
+function getVendorBillNumber(order,keys){
+
+    for(const key of keys){
+
+        const raw =
+            order?.[key];
+
+        if(
+            raw !== null &&
+            raw !== undefined &&
+            String(raw).trim() !== ""
+        ){
+            const value =
+                Number(raw);
+
+            if(Number.isFinite(value)){
+                return value;
+            }
+        }
+    }
+
+    return 0;
+}
+
+
+function getVendorOrderItemTotal(order,fallbackTotal=0){
+
+    const saved =
+        getVendorBillNumber(
+            order,
+            [
+                "item_total",
+                "items_total",
+                "subtotal",
+                "cart_total",
+                "products_total"
+            ]
+        );
+
+    if(saved > 0){
+        return saved;
+    }
+
+    return Number(fallbackTotal) || 0;
+}
+
+
+function getVendorLowCartFee(order,itemTotal){
+
+    /*
+      Use the exact fee saved by checkout first.
+      If an older order does not have low_cart_fee,
+      calculate it from the same CEZOO slabs.
+    */
+
+    const saved =
+        getVendorBillNumber(
+            order,
+            [
+                "low_cart_fee",
+                "low_cart_charge",
+                "low_cart"
+            ]
+        );
+
+    if(itemTotal >= 180){
+        return 0;
+    }
+
+    if(saved > 0){
+        return saved;
+    }
+
+    if(itemTotal <= 0){
+        return 0;
+    }
+
+    if(itemTotal <= 30){
+        return 40;
+    }
+
+    if(itemTotal <= 60){
+        return 30;
+    }
+
+    if(itemTotal <= 90){
+        return 25;
+    }
+
+    if(itemTotal <= 120){
+        return 20;
+    }
+
+    if(itemTotal <= 150){
+        return 15;
+    }
+
+    if(itemTotal < 180){
+        return 10;
+    }
+
+    return 0;
+}
+
+
+function renderVendorBillDetails(order,fallbackProductTotal){
+
+    const itemTotal =
+        getVendorOrderItemTotal(
+            order,
+            fallbackProductTotal
+        );
+
+    const deliveryFee =
+        getVendorBillNumber(
+            order,
+            [
+                "delivery_fee",
+                "delivery_charge",
+                "delivery_charges",
+                "delivery_pay"
+            ]
+        );
+
+    const handlingFee =
+        getVendorBillNumber(
+            order,
+            [
+                "handling_fee",
+                "handling_charges",
+                "handling_pay",
+                "platform_fee"
+            ]
+        );
+
+    const lowCartFee =
+        getVendorLowCartFee(
+            order,
+            itemTotal
+        );
+
+    const tip =
+        getVendorBillNumber(
+            order,
+            [
+                "delivery_tip",
+                "delivery_partner_tip",
+                "partner_tip",
+                "tip"
+            ]
+        );
+
+    const tax =
+        getVendorBillNumber(
+            order,
+            [
+                "tax",
+                "taxes",
+                "gst",
+                "tax_amount"
+            ]
+        );
+
+    const discount =
+        getVendorBillNumber(
+            order,
+            [
+                "discount",
+                "discount_amount",
+                "coupon_discount",
+                "coupon_discount_amount"
+            ]
+        );
+
+    const savedGrandTotal =
+        getVendorBillNumber(
+            order,
+            [
+                "total_amount",
+                "total_to_pay",
+                "grand_total",
+                "total"
+            ]
+        );
+
+    const calculatedGrandTotal =
+        Math.max(
+            0,
+            itemTotal +
+            deliveryFee +
+            handlingFee +
+            lowCartFee +
+            tip +
+            tax -
+            discount
+        );
+
+    const grandTotal =
+        savedGrandTotal > 0
+            ? savedGrandTotal
+            : calculatedGrandTotal;
+
+    return `
+        <div class="vendor-bill-title">
+            Bill Details
+        </div>
+
+        <div class="vendor-bill-row">
+            <span>Item Total</span>
+            <strong>₹${itemTotal.toFixed(2)}</strong>
+        </div>
+
+        <div class="vendor-bill-row">
+            <span>Delivery Fee</span>
+            <strong>₹${deliveryFee.toFixed(2)}</strong>
+        </div>
+
+        <div class="vendor-bill-row">
+            <span>Handling Fee</span>
+            <strong>₹${handlingFee.toFixed(2)}</strong>
+        </div>
+
+        ${
+            lowCartFee > 0
+                ? `
+                    <div class="vendor-bill-row">
+                        <span>Low Cart</span>
+                        <strong>₹${lowCartFee.toFixed(2)}</strong>
+                    </div>
+                `
+                : ""
+        }
+
+        <div class="vendor-bill-row">
+            <span>Taxes / GST</span>
+            <strong>₹${tax.toFixed(2)}</strong>
+        </div>
+
+        <div class="vendor-bill-row">
+            <span>Delivery Tip</span>
+            <strong>₹${tip.toFixed(2)}</strong>
+        </div>
+
+        <div class="vendor-bill-row">
+            <span>Discount</span>
+            <strong>${discount > 0 ? "- " : ""}₹${discount.toFixed(2)}</strong>
+        </div>
+
+        <div class="vendor-bill-total">
+            <span>Total Bill</span>
+            <strong>₹${grandTotal.toFixed(2)}</strong>
+        </div>
+    `;
+}
+
+
 function renderOrders(){
 
     renderAnalytics();
@@ -7608,15 +7871,12 @@ function renderOrders(){
 
             <div class="order-summary">
 
-                <div>
-                    <div class="summary-label">
-                        TOTAL
-                    </div>
-
-                    <div class="summary-value">
-                        ₹${total.toFixed(2)}
-                    </div>
-                </div>
+                ${
+                    renderVendorBillDetails(
+                        order,
+                        total
+                    )
+                }
 
                 <button
                     class="pack-btn"
