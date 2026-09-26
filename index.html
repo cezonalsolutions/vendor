@@ -1303,7 +1303,7 @@ button,input{font:inherit} button{cursor:pointer}
 
 <div class="history-actions">
     <button id="packedHistoryBtn" class="history-btn" type="button">
-        <strong><i class="fa-solid fa-box-check"></i> Packed Items</strong>
+        <strong><i class="fa-solid fa-box-open"></i> Packed Items</strong>
         <span>See orders packed by this vendor</span>
     </button>
 
@@ -1354,7 +1354,7 @@ button,input{font:inherit} button{cursor:pointer}
 </button>
 
 <button class="nav-btn" data-page="packedLivePage" type="button">
-    <i class="fa-solid fa-box-check"></i>
+    <i class="fa-solid fa-box-open"></i>
     <span>Packed</span>
 </button>
 
@@ -1604,112 +1604,25 @@ function cleanVendorMobile(value){
 }
 
 async function resolveProductVendorId(){
-
-    productVendorId = null;
-
-    if(!currentVendor){
+    if(!currentVendor?.id){
+        productVendorId = null;
         return null;
     }
 
-    const phone =
-        cleanVendorMobile(
-            currentVendor.mobile
-        );
+    productVendorId = currentVendor.id;
+    currentVendor.product_vendor_id = currentVendor.id;
 
-    if(phone.length !== 10){
-
-        /*
-          Legacy fallback:
-          older installations may have product.vendor_id directly
-          pointing to vendor_login.id.
-        */
-        productVendorId =
-            currentVendor.id;
-
-        return productVendorId;
-    }
-
-    try{
-
-        const {
-            data,
-            error
-        } =
-        await sb
-            .from("vendors")
-            .select("id,vendor_name,mobile,status")
-            .eq("mobile",phone)
-            .maybeSingle();
-
-        if(error){
-            console.warn(
-                "Product vendor ID lookup failed:",
-                error
-            );
-        }
-
-        if(
-            data &&
-            data.id !== null &&
-            data.id !== undefined
-        ){
-
-            productVendorId =
-                data.id;
-
-            currentVendor.product_vendor_id =
-                data.id;
-
-            currentVendor.product_vendor_name =
-                data.vendor_name ||
-                currentVendor.vendor_name ||
-                "";
-
-            console.log(
-                "CEZOO vendor bridge:",
-                {
-                    vendor_login_id:
-                        currentVendor.id,
-                    product_vendor_id:
-                        productVendorId,
-                    mobile:
-                        phone
-                }
-            );
-
-            return productVendorId;
-        }
-
-    }catch(error){
-
-        console.warn(
-            "Product vendor ID lookup failed:",
-            error
-        );
-
-    }
-
-
-    /*
-      Safe backwards-compatible fallback.
-      This keeps an old vendor working when their product FK
-      still points directly to vendor_login(id).
-    */
-    productVendorId =
-        currentVendor.id;
+    console.log("CEZOO vendor ID:", {
+        vendor_login_id: currentVendor.id,
+        product_vendor_id: productVendorId,
+        mobile: cleanVendorMobile(currentVendor.mobile)
+    });
 
     return productVendorId;
 }
 
 function getProductVendorId(){
-
-    return (
-        productVendorId ??
-        currentVendor?.product_vendor_id ??
-        currentVendor?.id ??
-        null
-    );
-
+    return currentVendor?.id ?? null;
 }
 
 
@@ -1778,7 +1691,11 @@ function getAnalyticsOrderStatus(order){
         .trim().toLowerCase().replaceAll(" ","_");
 }
 async function loadAnalyticsOrders(){
-    if(!currentVendor || !currentVendor.id){
+    const vendorSnapshot = currentVendor;
+    const vendorId = vendorSnapshot?.id ?? null;
+    const productId = vendorId;
+
+    if(!vendorId){
         analyticsOrders = [];
         renderAnalytics();
         return;
@@ -1822,10 +1739,10 @@ async function loadAnalyticsOrders(){
                         row.vendor_id !== undefined &&
                         (
                             String(row.vendor_id) ===
-                                String(currentVendor.id)
+                                String(vendorId)
                             ||
                             String(row.vendor_id) ===
-                                String(getProductVendorId())
+                                String(productId)
                         );
 
                     let productBelongsToVendor = false;
@@ -4673,6 +4590,11 @@ async event => {
         currentVendor =
             data;
 
+        sessionStorage.setItem(
+            "cezoo_vendor_active_page",
+            "ordersPage"
+        );
+
 
         /*
           IMPORTANT:
@@ -4811,8 +4733,11 @@ async function openVendorApp(
     renderOrders();
 
 
+    // IMPORTANT: read the page NOW, after all async loading finishes.
+    // If the vendor clicked Profile/Products/Packed while loading,
+    // never force them back to the old Orders/Home page.
     openPage(
-        "ordersPage"
+        getSavedVendorPage()
     );
 
 }
@@ -6349,78 +6274,54 @@ async () => {
 =========================== */
 
 async function loadVendorProducts(){
-
-    productsDisplay.innerHTML = `
-        <div class="loading-spinner-only">
-            <div class="spinner"></div>
-        </div>
-    `;
-
-
-    const all = [];
-
-
-    for(
-        const table
-        of PRODUCT_TABLES
-    ){
-
-
-        const {
-            data,
-            error
-        } =
-        await sb
-        .from(table)
-        .select("*")
-        .eq(
-            "vendor_id",
-            getProductVendorId()
-        );
-
-
-        if(error){
-
-            console.error(
-                table,
-                error
-            );
-
-            continue;
-
-        }
-
-
-        (
-            data || []
-        )
-        .forEach(
-            product => {
-
-                all.push({
-
-                    ...product,
-
-                    product_table:
-                        normalizeTable(table)
-
-                });
-
-            }
-        );
-
-
+    if(productsDisplay){
+        productsDisplay.innerHTML = `
+            <div class="loading-spinner-only">
+                <div class="spinner"></div>
+            </div>`;
     }
 
+    const vendorId = getProductVendorId();
 
-    vendorProducts =
-        all;
+    if(!vendorId){
+        vendorProducts = [];
+        renderProducts();
+        return;
+    }
 
+    const results = await Promise.all(
+        PRODUCT_TABLES.map(async table => {
+            try{
+                const {data,error} = await sb
+                    .from(table)
+                    .select("*")
+                    .eq("vendor_id", vendorId);
 
+                if(error){
+                    console.error(table,error);
+                    return [];
+                }
+
+                return (data || [])
+                    .filter(Boolean)
+                    .map(product => ({
+                        ...product,
+                        product_table: normalizeTable(table)
+                    }));
+            }catch(error){
+                console.error(table,error);
+                return [];
+            }
+        })
+    );
+
+    if(!currentVendor || String(currentVendor.id) !== String(vendorId)){
+        return;
+    }
+
+    vendorProducts = results.flat();
     renderProducts();
-
 }
-
 
 function createVendorProductMap(){
 
@@ -6428,22 +6329,18 @@ function createVendorProductMap(){
         new Map();
 
 
-    vendorProducts.forEach(
-        product => {
-
-            map.set(
-
-                productKey(
-                    product.product_table,
-                    product.id
-                ),
-
-                product
-
-            );
-
+    vendorProducts
+    .filter(Boolean)
+    .forEach(product => {
+        if(product.id === null || product.id === undefined){
+            return;
         }
-    );
+
+        map.set(
+            productKey(product.product_table, product.id),
+            product
+        );
+    });
 
 
     return map;
@@ -10161,10 +10058,11 @@ function renderPackedLiveOrders(){
  display.innerHTML=packedLiveOrders.map(row=>{const items=getOrderItems(row);const status=getPackedLiveStatus(row);const partnerName=getPackedLivePartnerName(row);const partnerMobile=getPackedLivePartnerMobile(row);const packedTime=row.vendor_packed_at||row.packed_at||row.sent_to_delivery_at||row.updated_at||row.created_at;return `<div class="packed-live-card"><div class="packed-live-head"><div><div class="packed-live-order">Order #${escapeHTML(getPackedLiveSourceId(row))}</div><div class="packed-live-time">${escapeHTML(formatHistoryDate(packedTime))}</div></div><div class="packed-live-status ${escapeHTML(status)}">${escapeHTML(status.replaceAll("_"," "))}</div></div><div class="packed-live-items">${items.length?items.map(item=>{const product=getPackedLiveItemProduct(item);const image=getPackedLiveItemImage(item,product);const name=getPackedLiveItemName(item,product);const qty=getQuantity(item);const total=getPackedLiveItemTotal(item,product);return `<div class="packed-live-item"><div class="packed-live-image">${image?`<img src="${escapeHTML(image)}" alt="">`:`<i class="fa-solid fa-box"></i>`}</div><div class="packed-live-product"><div class="packed-live-product-name">${escapeHTML(name)}</div><div class="packed-live-product-meta">Qty ${escapeHTML(qty)}</div></div><div class="packed-live-product-total">₹${Number(total||0).toFixed(2)}</div></div>`}).join(""):`<div class="packed-live-item"><div class="packed-live-image"><i class="fa-solid fa-box"></i></div><div class="packed-live-product"><div class="packed-live-product-name">Packed order</div></div><div class="packed-live-product-total">—</div></div>`}</div><div class="packed-live-partner"><div class="packed-live-partner-label">DELIVERY PARTNER</div><div class="packed-live-partner-name">${partnerName?escapeHTML(partnerName):((status==="assigned"||status==="packed")?"Waiting for delivery partner":"Delivery partner")}</div>${partnerMobile?`<div class="packed-live-partner-mobile">${escapeHTML(partnerMobile)}</div>`:""}</div></div>`}).join("")
 }
 async function loadPackedLiveOrders(){
- if(!currentVendor?.id){packedLiveOrders=[];renderPackedLiveOrders();return}
+ const vendorId=currentVendor?.id??null;
+ if(!vendorId){packedLiveOrders=[];renderPackedLiveOrders();return}
  const all=[];
  for(const table of ["delivery_cash_orders","delivery_upi_orders"]){
-  let query=sb.from(table).select("*").eq("vendor_id",currentVendor.id).limit(300);
+  let query=sb.from(table).select("*").eq("vendor_id",vendorId).limit(300);
   const {data,error}=await query;
   if(error){console.warn("Packed live load:",table,error);continue}
   (data||[]).forEach(row=>all.push({...row,_packedLiveTable:table}));
@@ -10179,6 +10077,14 @@ async function startPackedLiveRealtime(){stopPackedLiveRealtime();if(!currentVen
 /* ===========================
    NAVIGATION
 =========================== */
+
+const VENDOR_PAGE_KEY = "cezoo_vendor_active_page";
+
+function getSavedVendorPage(){
+    const saved = sessionStorage.getItem(VENDOR_PAGE_KEY);
+    return document.getElementById(saved || "") ? saved : "ordersPage";
+}
+
 
 document
 .querySelectorAll(
@@ -10205,6 +10111,11 @@ document
 function openPage(
     pageId
 ){
+    if(!document.getElementById(pageId)){
+        pageId = "ordersPage";
+    }
+
+    sessionStorage.setItem(VENDOR_PAGE_KEY,pageId);
 
     document
     .querySelectorAll(
@@ -10311,6 +10222,10 @@ document
 
     localStorage.removeItem(
         "cezoo_vendor_id"
+    );
+
+    sessionStorage.removeItem(
+        "cezoo_vendor_active_page"
     );
 
 
