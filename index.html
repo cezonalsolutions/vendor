@@ -3878,7 +3878,6 @@ const PRODUCTS_PAGE_SIZE = 12;
 let vendorProductsCache = [];
 let vendorProductsCategoryFilter = "all";
 let vendorProductsInitialLoadPromise = null;
-    renderVendorProductCategories();
 let vendorProductsVisibleCount = 0;
 let vendorProductsObserver = null;
 let vendorProductsLoadingMore = false;
@@ -5122,8 +5121,21 @@ function openMainUI(vendor){
 
   ).textContent = location;
 
-  resolveActualVendorId().then(()=>{
-    // Products are NOT preloaded. They load only when the Products tab is opened.
+  resolveActualVendorId().then(async ()=>{
+    /*
+      Orders need the vendor's product ownership map to match
+      product_table + product_id. Load only the DATA here;
+      do NOT render/open/preload the Products page.
+    */
+    if(!vendorProductsCache.length){
+      vendorProductsCache = await fetchLoggedVendorProducts();
+      updateProfileProductStats(vendorProductsCache);
+      renderVendorProductCategories();
+    }
+
+    await startVendorOrders();
+  }).catch(error=>{
+    console.error("Vendor startup/orders:",error);
     startVendorOrders();
   });
 
