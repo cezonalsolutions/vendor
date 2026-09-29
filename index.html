@@ -2277,6 +2277,49 @@ body.keyboard-open .loginTitle{
   color:#685cff;
 }
 
+
+/* =====================================
+   CEZOO APP FONT LOCK
+   Keep the CSS-selected app font on mobile/WebView.
+===================================== */
+html{
+  -webkit-text-size-adjust:100% !important;
+  text-size-adjust:100% !important;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+option{
+  font-family:inherit !important;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+button,
+input,
+select,
+textarea{
+  font:inherit !important;
+}
+
+input::placeholder,
+textarea::placeholder{
+  font-family:inherit !important;
+}
+
+/* Android WebView/browser controls must not fall back to device UI font */
+.vendorApp,
+.vendorPage,
+.vendorBottomNav,
+.loginPage,
+#mainUI,
+#loginPage{
+  font-family:inherit !important;
+}
+
 </style>
 
 
@@ -6144,11 +6187,97 @@ async function loadLiveVendorOrders(){
   }
   vendorLiveOrders=all.sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0));renderLiveVendorOrders();
 }
-function stopVendorOrders(){vendorOrderChannels.forEach(ch=>{try{sb.removeChannel(ch)}catch(e){}});vendorOrderChannels=[];vendorLiveOrders=[];stopVendorStatusRealtime()}
+function stopVendorOrders(){vendorOrderChannels.forEach(ch=>{try{sb.removeChannel(ch)}catch(e){}});vendorOrderChannels=[];vendorLiveOrders=[];stopVendorOrdersPoll();stopVendorStatusRealtime()}
+let vendorOrdersPollTimer = null;
+let vendorOrdersVisibilityBound = false;
+
+function stopVendorOrdersPoll(){
+  if(vendorOrdersPollTimer){
+    clearInterval(vendorOrdersPollTimer);
+    vendorOrdersPollTimer = null;
+  }
+}
+
+function startVendorOrdersPoll(){
+  stopVendorOrdersPoll();
+  vendorOrdersPollTimer = setInterval(()=>{
+    if(currentVendor && !document.hidden){
+      loadLiveVendorOrders().catch(error=>{
+        console.warn("Vendor order live refresh:",error);
+      });
+    }
+  },5000);
+}
+
 async function startVendorOrders(){
-  stopVendorOrders();await loadLiveVendorOrders();
+  stopVendorOrders();
+
+  /*
+    Subscribe FIRST so an order created while initial DB load is running
+    cannot be missed. Then do the initial DB refresh.
+  */
+  VENDOR_ORDER_TABLES.forEach(cfg=>{
+    const ch=sb
+      .channel(`vendor-orders-${cfg.table}-${currentVendor?.id||"x"}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {event:"*",schema:"public",table:cfg.table},
+        payload=>{
+          if(payload.eventType==="DELETE"){
+            vendorLiveOrders=vendorLiveOrders.filter(
+              o=>!(o._sourceTable===cfg.table && String(o.id)===String(payload.old?.id))
+            );
+            renderLiveVendorOrders();
+            return;
+          }
+
+          upsertLiveVendorOrder(payload.new,cfg);
+
+          /*
+            Also re-read DB after realtime event. This keeps Orders correct
+            even if a row arrives before/while product ownership data changes.
+          */
+          setTimeout(()=>{
+            loadLiveVendorOrders().catch(()=>{});
+          },150);
+        }
+      )
+      .subscribe(status=>{
+        console.log("Vendor orders realtime",cfg.table,status);
+
+        if(status==="SUBSCRIBED"){
+          loadLiveVendorOrders().catch(()=>{});
+        }
+      });
+
+    vendorOrderChannels.push(ch);
+  });
+
   startVendorStatusRealtime();
-  VENDOR_ORDER_TABLES.forEach(cfg=>{const ch=sb.channel(`vendor-orders-${cfg.table}-${currentVendor?.id||"x"}`).on("postgres_changes",{event:"*",schema:"public",table:cfg.table},payload=>{if(payload.eventType==="DELETE"){vendorLiveOrders=vendorLiveOrders.filter(o=>!(o._sourceTable===cfg.table&&String(o.id)===String(payload.old?.id)));renderLiveVendorOrders()}else upsertLiveVendorOrder(payload.new,cfg)}).subscribe();vendorOrderChannels.push(ch)})
+  await loadLiveVendorOrders();
+  startVendorOrdersPoll();
+
+  if(!vendorOrdersVisibilityBound){
+    vendorOrdersVisibilityBound=true;
+
+    document.addEventListener("visibilitychange",()=>{
+      if(!document.hidden && currentVendor){
+        loadLiveVendorOrders().catch(()=>{});
+      }
+    });
+
+    window.addEventListener("focus",()=>{
+      if(currentVendor){
+        loadLiveVendorOrders().catch(()=>{});
+      }
+    });
+
+    window.addEventListener("online",()=>{
+      if(currentVendor){
+        startVendorOrders().catch(()=>{});
+      }
+    });
+  }
 }
 async function autoSendToDelivery(order){
   const deliveryTable=order._deliveryTable;
